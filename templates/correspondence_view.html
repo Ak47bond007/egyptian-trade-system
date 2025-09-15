@@ -1,0 +1,495 @@
+{% extends "base.html" %}
+
+{% block title %}{{ correspondence.reference_number }} - عرض المكاتبة{% endblock %}
+
+{% block extra_css %}
+<style>
+    .correspondence-header {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+        color: white;
+        border-radius: 8px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+    .info-card {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        margin-bottom: 1.5rem;
+    }
+    .info-card .card-header {
+        background: #f8f9fa;
+        border-bottom: 2px solid #007bff;
+        font-weight: 600;
+    }
+    .attachment-card {
+        transition: all 0.3s ease;
+        border: 1px solid #dee2e6;
+    }
+    .attachment-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+        border-color: #007bff;
+    }
+    .priority-urgent { border-right: 4px solid #dc3545; }
+    .priority-high { border-right: 4px solid #ffc107; }
+    .priority-normal { border-right: 4px solid #28a745; }
+    .priority-low { border-right: 4px solid #6c757d; }
+    
+    .content-section {
+        background: #fff;
+        border-radius: 8px;
+        padding: 2rem;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        border-right: 4px solid #007bff;
+        line-height: 1.8;
+        font-size: 1.1rem;
+    }
+    
+    @media print {
+        .no-print { display: none !important; }
+        body { background: white !important; }
+        .card { box-shadow: none !important; border: 1px solid #000 !important; }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Action Buttons -->
+    <div class="col-12 mb-3 no-print">
+        <div class="d-flex justify-content-between align-items-center">
+            <a href="{{ url_for('correspondence_list') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-right"></i> رجوع للقائمة
+            </a>
+            <div class="btn-group">
+                <a href="{{ url_for('edit_correspondence', id=correspondence.id) }}" class="btn btn-primary">
+                    <i class="fas fa-edit"></i> تعديل
+                </a>
+                <a href="{{ url_for('print_correspondence', id=correspondence.id) }}" 
+                   class="btn btn-info" target="_blank">
+                    <i class="fas fa-print"></i> طباعة
+                </a>
+                <button class="btn btn-success" onclick="window.print()">
+                    <i class="fas fa-print"></i> طباعة سريعة
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Correspondence Header -->
+    <div class="col-12">
+        <div class="correspondence-header priority-{{ correspondence.priority }}">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="h3 mb-2">
+                        {% if correspondence.type == 'incoming' %}
+                            <i class="fas fa-inbox"></i> مكاتبة واردة
+                        {% else %}
+                            <i class="fas fa-paper-plane"></i> مكاتبة صادرة
+                        {% endif %}
+                    </h1>
+                    <h2 class="h4 mb-3">{{ correspondence.subject }}</h2>
+                    <p class="mb-1">
+                        <strong>الرقم المرجعي:</strong> {{ correspondence.reference_number }}
+                    </p>
+                    <p class="mb-0">
+                        <strong>تاريخ الإنشاء:</strong> 
+                        {{ correspondence.date_created.strftime('%A، %d %B %Y - %H:%M') }}
+                    </p>
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <!-- Priority Badge -->
+                    {% if correspondence.priority == 'urgent' %}
+                        <span class="badge bg-danger fs-6 mb-2">
+                            <i class="fas fa-exclamation-triangle"></i> عاجلة
+                        </span>
+                    {% elif correspondence.priority == 'high' %}
+                        <span class="badge bg-warning text-dark fs-6 mb-2">
+                            <i class="fas fa-star"></i> عالية الأولوية
+                        </span>
+                    {% elif correspondence.priority == 'low' %}
+                        <span class="badge bg-secondary fs-6 mb-2">
+                            <i class="fas fa-minus"></i> أولوية منخفضة
+                        </span>
+                    {% else %}
+                        <span class="badge bg-success fs-6 mb-2">
+                            <i class="fas fa-check"></i> أولوية عادية
+                        </span>
+                    {% endif %}
+                    
+                    <!-- Status Badge -->
+                    <br>
+                    {% if correspondence.status == 'pending' %}
+                        <span class="badge bg-warning text-dark fs-6">
+                            <i class="fas fa-clock"></i> معلقة
+                        </span>
+                    {% elif correspondence.status == 'processed' %}
+                        <span class="badge bg-success fs-6">
+                            <i class="fas fa-check-circle"></i> معالجة
+                        </span>
+                    {% elif correspondence.status == 'archived' %}
+                        <span class="badge bg-secondary fs-6">
+                            <i class="fas fa-archive"></i> مؤرشفة
+                        </span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Correspondence Details -->
+    <div class="col-lg-8">
+        <!-- Basic Information -->
+        <div class="info-card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-info-circle text-primary"></i> تفاصيل المكاتبة
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>النوع:</strong>
+                            {% if correspondence.type == 'incoming' %}
+                                <span class="text-success">
+                                    <i class="fas fa-inbox"></i> مكاتبة واردة
+                                </span>
+                            {% else %}
+                                <span class="text-info">
+                                    <i class="fas fa-paper-plane"></i> مكاتبة صادرة
+                                </span>
+                            {% endif %}
+                        </p>
+                        
+                        {% if correspondence.sender %}
+                        <p><strong>المرسل:</strong> {{ correspondence.sender }}</p>
+                        {% endif %}
+                        
+                        {% if correspondence.recipient %}
+                        <p><strong>المستقبل:</strong> {{ correspondence.recipient }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        {% if correspondence.date_received %}
+                        <p><strong>تاريخ الاستلام:</strong> 
+                            {{ correspondence.date_received.strftime('%A، %d %B %Y') }}
+                        </p>
+                        {% endif %}
+                        
+                        <p><strong>الأولوية:</strong>
+                            {% if correspondence.priority == 'urgent' %}
+                                <span class="text-danger">عاجلة</span>
+                            {% elif correspondence.priority == 'high' %}
+                                <span class="text-warning">عالية</span>
+                            {% elif correspondence.priority == 'low' %}
+                                <span class="text-secondary">منخفضة</span>
+                            {% else %}
+                                <span class="text-success">عادية</span>
+                            {% endif %}
+                        </p>
+                        
+                        <p><strong>حالة المعالجة:</strong>
+                            {% if correspondence.status == 'pending' %}
+                                <span class="text-warning">معلقة</span>
+                            {% elif correspondence.status == 'processed' %}
+                                <span class="text-success">معالجة</span>
+                            {% elif correspondence.status == 'archived' %}
+                                <span class="text-secondary">مؤرشفة</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Content -->
+        <div class="info-card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-file-alt text-primary"></i> محتوى المكاتبة
+                </h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="content-section">
+                    {{ correspondence.content|replace('\n', '<br>')|safe }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attachments Sidebar -->
+    <div class="col-lg-4">
+        <div class="info-card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-paperclip text-primary"></i> 
+                    المرفقات 
+                    {% if correspondence.attachments %}
+                        <span class="badge bg-primary">{{ correspondence.attachments|length }}</span>
+                    {% endif %}
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if correspondence.attachments %}
+                    {% for attachment in correspondence.attachments %}
+                    <div class="attachment-card card mb-3">
+                        <div class="card-body p-3">
+                            <div class="d-flex align-items-center">
+                                <!-- File Icon -->
+                                <div class="me-3">
+                                    {% set file_ext = attachment.filename.split('.')[-1].lower() %}
+                                    {% if file_ext in ['pdf'] %}
+                                        <i class="fas fa-file-pdf fa-2x text-danger"></i>
+                                    {% elif file_ext in ['doc', 'docx'] %}
+                                        <i class="fas fa-file-word fa-2x text-primary"></i>
+                                    {% elif file_ext in ['xls', 'xlsx'] %}
+                                        <i class="fas fa-file-excel fa-2x text-success"></i>
+                                    {% elif file_ext in ['ppt', 'pptx'] %}
+                                        <i class="fas fa-file-powerpoint fa-2x text-warning"></i>
+                                    {% elif file_ext in ['jpg', 'jpeg', 'png', 'gif', 'bmp'] %}
+                                        <i class="fas fa-file-image fa-2x text-info"></i>
+                                    {% elif file_ext in ['zip', 'rar', '7z'] %}
+                                        <i class="fas fa-file-archive fa-2x text-secondary"></i>
+                                    {% else %}
+                                        <i class="fas fa-file fa-2x text-muted"></i>
+                                    {% endif %}
+                                </div>
+                                
+                                <!-- File Info -->
+                                <div class="flex-grow-1">
+                                    <h6 class="card-title mb-1 text-truncate" title="{{ attachment.filename }}">
+                                        {{ attachment.filename }}
+                                    </h6>
+                                    <small class="text-muted">
+                                        {{ "%.1f"|format(attachment.file_size / 1024) }} KB
+                                        • {{ attachment.date_uploaded.strftime('%d/%m/%Y') }}
+                                    </small>
+                                    <br>
+                                    <small class="text-muted">{{ attachment.mime_type }}</small>
+                                </div>
+                            </div>
+                            
+                            <!-- Action Buttons -->
+                            <div class="mt-3 d-grid gap-2 d-md-flex justify-content-md-end">
+                                <a href="{{ url_for('view_attachment', id=attachment.id) }}" 
+                                   class="btn btn-outline-primary btn-sm" target="_blank">
+                                    <i class="fas fa-eye"></i> عرض
+                                </a>
+                                <a href="{{ url_for('download_attachment', id=attachment.id) }}" 
+                                   class="btn btn-outline-success btn-sm">
+                                    <i class="fas fa-download"></i> تحميل
+                                </a>
+                                <button type="button" class="btn btn-outline-danger btn-sm no-print" 
+                                        onclick="deleteAttachment({{ attachment.id }})">
+                                    <i class="fas fa-trash"></i> حذف
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-paperclip fa-3x text-muted mb-3"></i>
+                        <p class="text-muted mb-3">لا توجد مرفقات</p>
+                        <a href="{{ url_for('edit_correspondence', id=correspondence.id) }}" 
+                           class="btn btn-outline-primary btn-sm no-print">
+                            <i class="fas fa-plus"></i> إضافة مرفقات
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="info-card no-print">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-bolt text-primary"></i> إجراءات سريعة
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('edit_correspondence', id=correspondence.id) }}" 
+                       class="btn btn-outline-primary">
+                        <i class="fas fa-edit"></i> تعديل المكاتبة
+                    </a>
+                    
+                    {% if correspondence.status == 'pending' %}
+                    <button class="btn btn-outline-success" onclick="updateStatus('processed')">
+                        <i class="fas fa-check"></i> تحديد كمعالجة
+                    </button>
+                    {% elif correspondence.status == 'processed' %}
+                    <button class="btn btn-outline-secondary" onclick="updateStatus('archived')">
+                        <i class="fas fa-archive"></i> أرشفة
+                    </button>
+                    {% endif %}
+                    
+                    <a href="{{ url_for('new_correspondence') }}" class="btn btn-outline-info">
+                        <i class="fas fa-reply"></i> رد على المكاتبة
+                    </a>
+                    
+                    <a href="{{ url_for('print_correspondence', id=correspondence.id) }}" 
+                       class="btn btn-outline-dark" target="_blank">
+                        <i class="fas fa-print"></i> نسخة للطباعة
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Attachment Preview Modal -->
+<div class="modal fade" id="attachmentModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">معاينة المرفق</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="attachmentPreview" class="text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">جاري التحميل...</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Delete attachment function
+function deleteAttachment(attachmentId) {
+    if (confirm('هل أنت متأكد من حذف هذا المرفق؟')) {
+        fetch(`/attachment/${attachmentId}/delete`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('حدث خطأ أثناء حذف المرفق');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('حدث خطأ أثناء حذف المرفق');
+        });
+    }
+}
+
+// Update status function
+function updateStatus(newStatus) {
+    let statusText = newStatus === 'processed' ? 'معالجة' : 'مؤرشفة';
+    
+    if (confirm(`هل تريد تحديث حالة المكاتبة إلى "${statusText}"؟`)) {
+        // Create a form to submit the status update
+        let form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '{{ url_for("edit_correspondence", id=correspondence.id) }}';
+        
+        // Add status field
+        let statusInput = document.createElement('input');
+        statusInput.type = 'hidden';
+        statusInput.name = 'status';
+        statusInput.value = newStatus;
+        form.appendChild(statusInput);
+        
+        // Add other required fields with current values
+        {% for field in ['subject', 'content', 'type', 'sender', 'recipient', 'priority'] %}
+        let {{ field }}Input = document.createElement('input');
+        {{ field }}Input.type = 'hidden';
+        {{ field }}Input.name = '{{ field }}';
+        {{ field }}Input.value = '{{ correspondence[field] if correspondence[field] else "" }}';
+        form.appendChild({{ field }}Input);
+        {% endfor %}
+        
+        {% if correspondence.date_received %}
+        let dateInput = document.createElement('input');
+        dateInput.type = 'hidden';
+        dateInput.name = 'date_received';
+        dateInput.value = '{{ correspondence.date_received.strftime("%Y-%m-%d") }}';
+        form.appendChild(dateInput);
+        {% endif %}
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+// Preview attachment function
+function previewAttachment(attachmentId) {
+    const modal = new bootstrap.Modal(document.getElementById('attachmentModal'));
+    const previewDiv = document.getElementById('attachmentPreview');
+    
+    // Show loading
+    previewDiv.innerHTML = `
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">جاري التحميل...</span>
+        </div>
+    `;
+    
+    modal.show();
+    
+    // Load preview
+    fetch(`/attachment/${attachmentId}/view`)
+        .then(response => {
+            if (response.ok) {
+                const contentType = response.headers.get('content-type');
+                if (contentType.includes('image')) {
+                    return response.blob().then(blob => {
+                        const url = URL.createObjectURL(blob);
+                        previewDiv.innerHTML = `<img src="${url}" class="img-fluid" alt="معاينة المرفق">`;
+                    });
+                } else if (contentType.includes('pdf')) {
+                    const url = `/attachment/${attachmentId}/view`;
+                    previewDiv.innerHTML = `<iframe src="${url}" width="100%" height="500px" frameborder="0"></iframe>`;
+                } else {
+                    previewDiv.innerHTML = `
+                        <div class="text-center py-5">
+                            <i class="fas fa-file fa-3x text-muted mb-3"></i>
+                            <p>لا يمكن معاينة هذا النوع من الملفات</p>
+                            <a href="/attachment/${attachmentId}/download" class="btn btn-primary">
+                                <i class="fas fa-download"></i> تحميل الملف
+                            </a>
+                        </div>
+                    `;
+                }
+            } else {
+                throw new Error('فشل في تحميل المرفق');
+            }
+        })
+        .catch(error => {
+            previewDiv.innerHTML = `
+                <div class="text-center py-5">
+                    <i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
+                    <p>حدث خطأ أثناء تحميل المرفق</p>
+                </div>
+            `;
+        });
+}
+
+// Copy reference number to clipboard
+function copyReferenceNumber() {
+    const refNumber = '{{ correspondence.reference_number }}';
+    navigator.clipboard.writeText(refNumber).then(() => {
+        alert('تم نسخ الرقم المرجعي');
+    });
+}
+
+// Print page optimization
+window.addEventListener('beforeprint', function() {
+    document.body.classList.add('printing');
+});
+
+window.addEventListener('afterprint', function() {
+    document.body.classList.remove('printing');
+});
+</script>
+{% endblock %}

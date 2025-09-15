@@ -1,55 +1,361 @@
+/* Egyptian Correspondence Management System Styles */
+/* نظام إدارة المكاتبات المصري */
+
+/* RTL Support and Arabic Fonts */
 body {
-  font-family: Arial, sans-serif;
+  font-family: 'Segoe UI', 'Tahoma', 'Cairo', 'Amiri', 'Noto Sans Arabic', sans-serif;
   background: #f8f9fa;
   margin: 0;
   padding: 0;
+  direction: rtl;
+  text-align: right;
+  line-height: 1.6;
 }
-.todo-container {
-  width: 350px;
-  margin: 50px auto;
-  background: #fff;
-  padding: 2em;
-  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+
+/* Government Colors */
+:root {
+  --egypt-gold: #D4AF37;
+  --egypt-blue: #1B365D;
+  --egypt-red: #C8102E;
+  --success-green: #28a745;
+  --info-blue: #17a2b8;
+  --warning-yellow: #ffc107;
+  --danger-red: #dc3545;
 }
-h1 {
-  text-align: center;
+
+/* Header Styling */
+header {
+  background: linear-gradient(135deg, var(--egypt-blue) 0%, #2c5282 100%);
+  border-bottom: 4px solid var(--egypt-gold) !important;
 }
-form {
-  display: flex;
-  margin-bottom: 1em;
+
+header h1, header h2 {
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.3);
 }
-#todo-input {
-  flex: 1;
-  padding: 0.5em;
-  font-size: 1em;
+
+/* Navigation */
+.navbar-dark {
+  background: var(--egypt-blue) !important;
 }
-button {
-  padding: 0.5em 1em;
-  font-size: 1em;
-  margin-left: 0.5em;
+
+.navbar-nav .nav-link {
+  transition: all 0.3s ease;
 }
-ul {
-  list-style: none;
-  padding: 0;
-}
-li {
-  background: #f1f3f5;
-  margin-bottom: 0.5em;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.5em;
+
+.navbar-nav .nav-link:hover {
+  background: rgba(255,255,255,0.1);
   border-radius: 4px;
 }
-li.completed {
-  text-decoration: line-through;
-  color: #888;
-}
-.delete-btn {
-  background: #e03131;
-  color: #fff;
+
+/* Cards and Containers */
+.card {
   border: none;
-  border-radius: 3px;
-  cursor: pointer;
-  padding: 0.3em 0.7em;
+  border-radius: 10px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  transition: all 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+}
+
+.card-header {
+  border-bottom: 2px solid var(--egypt-gold);
+  background: linear-gradient(45deg, #f8f9fa, #e9ecef);
+  border-radius: 10px 10px 0 0 !important;
+}
+
+/* Buttons */
+.btn {
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.btn-primary {
+  background: var(--egypt-blue);
+  border-color: var(--egypt-blue);
+}
+
+.btn-primary:hover {
+  background: #2c5282;
+  border-color: #2c5282;
+  transform: translateY(-1px);
+}
+
+.btn-success {
+  background: var(--success-green);
+  border-color: var(--success-green);
+}
+
+.btn-warning {
+  background: var(--warning-yellow);
+  border-color: var(--warning-yellow);
+  color: #000;
+}
+
+/* Forms */
+.form-control, .form-select {
+  border-radius: 6px;
+  border: 2px solid #e9ecef;
+  transition: all 0.3s ease;
+}
+
+.form-control:focus, .form-select:focus {
+  border-color: var(--egypt-gold);
+  box-shadow: 0 0 0 0.2rem rgba(212, 175, 55, 0.25);
+}
+
+.required-field {
+  border-right: 3px solid var(--danger-red) !important;
+}
+
+/* Tables */
+.table {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.table thead th {
+  background: var(--egypt-blue);
+  color: white;
+  border: none;
+  font-weight: 600;
+}
+
+.table-hover tbody tr:hover {
+  background-color: rgba(212, 175, 55, 0.1);
+}
+
+/* Badges */
+.badge {
+  font-size: 0.8em;
+  padding: 0.4em 0.6em;
+  border-radius: 6px;
+}
+
+/* Pagination */
+.pagination .page-link {
+  color: var(--egypt-blue);
+  border-color: #dee2e6;
+}
+
+.pagination .page-item.active .page-link {
+  background-color: var(--egypt-blue);
+  border-color: var(--egypt-blue);
+}
+
+/* Dropzone Styling */
+.dropzone {
+  border: 2px dashed var(--egypt-gold) !important;
+  border-radius: 8px;
+  background: #fafafa;
+  transition: all 0.3s ease;
+  min-height: 150px;
+}
+
+.dropzone:hover {
+  border-color: var(--egypt-blue) !important;
+  background: #f0f8ff;
+}
+
+.dropzone .dz-message {
+  text-align: center;
+  margin: 2em 0;
+  color: #6c757d;
+}
+
+.dropzone .dz-preview {
+  margin: 16px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  background: white;
+}
+
+/* Attachments */
+.attachment-card {
+  transition: all 0.3s ease;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+}
+
+.attachment-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+  border-color: var(--egypt-gold);
+}
+
+/* Priority Colors */
+.priority-urgent {
+  border-right: 4px solid var(--danger-red);
+}
+
+.priority-high {
+  border-right: 4px solid var(--warning-yellow);
+}
+
+.priority-normal {
+  border-right: 4px solid var(--success-green);
+}
+
+.priority-low {
+  border-right: 4px solid #6c757d;
+}
+
+/* Status Colors */
+.status-pending {
+  color: var(--warning-yellow);
+}
+
+.status-processed {
+  color: var(--success-green);
+}
+
+.status-archived {
+  color: #6c757d;
+}
+
+/* Correspondence Type Colors */
+.correspondence-card.incoming {
+  border-right: 4px solid var(--success-green);
+}
+
+.correspondence-card.outgoing {
+  border-right: 4px solid var(--info-blue);
+}
+
+/* Filter Section */
+.filter-section {
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  border: 1px solid #dee2e6;
+  border-radius: 10px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+/* Government Logo Styling */
+header img {
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+}
+
+/* Footer */
+footer {
+  background: var(--egypt-blue) !important;
+  border-top: 3px solid var(--egypt-gold);
+}
+
+/* Loading and Animation */
+.spinner-border-custom {
+  width: 3rem;
+  height: 3rem;
+  border-width: 0.3em;
+  border-color: var(--egypt-gold);
+  border-right-color: transparent;
+}
+
+/* Print Styles */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  
+  body {
+    background: white !important;
+    font-size: 12pt;
+  }
+  
+  .card {
+    box-shadow: none !important;
+    border: 1px solid #000 !important;
+  }
+  
+  header {
+    background: white !important;
+    color: black !important;
+  }
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .table-responsive {
+    font-size: 0.9rem;
+  }
+  
+  .btn-group-sm .btn {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+  }
+  
+  .header-logos img {
+    max-height: 60px;
+  }
+}
+
+/* Arabic Text Improvements */
+.arabic-text {
+  font-family: 'Amiri', 'Cairo', 'Noto Sans Arabic', serif;
+  line-height: 1.8;
+}
+
+/* File Type Icons */
+.file-icon-pdf { color: #dc3545; }
+.file-icon-word { color: #007bff; }
+.file-icon-excel { color: #28a745; }
+.file-icon-powerpoint { color: #ffc107; }
+.file-icon-image { color: #17a2b8; }
+.file-icon-archive { color: #6c757d; }
+.file-icon-default { color: #6c757d; }
+
+/* Fade In Animation */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+  animation: fadeIn 0.5s ease-in-out;
+}
+
+/* Success Messages */
+.alert-success {
+  background-color: rgba(40, 167, 69, 0.1);
+  border-color: var(--success-green);
+  color: #155724;
+}
+
+.alert-danger {
+  background-color: rgba(220, 53, 69, 0.1);
+  border-color: var(--danger-red);
+  color: #721c24;
+}
+
+.alert-warning {
+  background-color: rgba(255, 193, 7, 0.1);
+  border-color: var(--warning-yellow);
+  color: #856404;
+}
+
+.alert-info {
+  background-color: rgba(23, 162, 184, 0.1);
+  border-color: var(--info-blue);
+  color: #0c5460;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--egypt-gold);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #b8941f;
 }

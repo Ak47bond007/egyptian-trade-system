@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}نظام إدارة المكاتبات - التمثيل التجاري المصري{% endblock %}</title>
+    
+    <!-- Bootstrap RTL CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link href="{{ url_for('static', filename='styles.css') }}" rel="stylesheet">
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="bg-light">
+    <!-- Header -->
+    <header class="bg-white shadow-sm border-bottom border-warning border-3">
+        <div class="container-fluid">
+            <div class="row align-items-center py-3">
+                <!-- Government Logos -->
+                <div class="col-md-3 text-center">
+                    <img src="{{ url_for('static', filename='images/ministry-logo.png') }}" 
+                         alt="وزارة الاستثمار والتجارة الخارجية" 
+                         class="img-fluid" style="max-height: 80px;">
+                </div>
+                
+                <!-- Title -->
+                <div class="col-md-6 text-center">
+                    <h1 class="h3 mb-1 text-primary fw-bold">نظام إدارة المكاتبات</h1>
+                    <h2 class="h5 mb-0 text-muted">التمثيل التجاري المصري</h2>
+                    <small class="text-muted">Egyptian Commercial Service - Correspondence Management System</small>
+                </div>
+                
+                <!-- ECS Logo -->
+                <div class="col-md-3 text-center">
+                    <img src="{{ url_for('static', filename='images/ecs-logo.png') }}" 
+                         alt="التمثيل التجاري المصري" 
+                         class="img-fluid" style="max-height: 80px;">
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'index' %}active{% endif %}" 
+                           href="{{ url_for('index') }}">
+                            <i class="fas fa-home"></i> الصفحة الرئيسية
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'correspondence_list' %}active{% endif %}" 
+                           href="{{ url_for('correspondence_list') }}">
+                            <i class="fas fa-envelope"></i> قائمة المكاتبات
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'new_correspondence' %}active{% endif %}" 
+                           href="{{ url_for('new_correspondence') }}">
+                            <i class="fas fa-plus"></i> مكاتبة جديدة
+                        </a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-filter"></i> تصفية
+                        </a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{{ url_for('correspondence_list', type='incoming') }}">
+                                <i class="fas fa-inbox text-success"></i> الواردة
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('correspondence_list', type='outgoing') }}">
+                                <i class="fas fa-paper-plane text-info"></i> الصادرة
+                            </a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('correspondence_list', status='pending') }}">
+                                <i class="fas fa-clock text-warning"></i> معلقة
+                            </a></li>
+                            <li><a class="dropdown-item" href="{{ url_for('correspondence_list', status='processed') }}">
+                                <i class="fas fa-check text-success"></i> معالجة
+                            </a></li>
+                        </ul>
+                    </li>
+                </ul>
+                
+                <!-- Search -->
+                <form class="d-flex">
+                    <input class="form-control me-2" type="search" placeholder="البحث في المكاتبات...">
+                    <button class="btn btn-outline-light" type="submit">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="container-fluid mt-3">
+                {% for category, message in messages %}
+                    <div class="alert alert-{% if category == 'error' %}danger{% elif category == 'success' %}success{% else %}info{% endif %} alert-dismissible fade show">
+                        <i class="fas fa-{% if category == 'error' %}exclamation-triangle{% elif category == 'success' %}check-circle{% else %}info-circle{% endif %}"></i>
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Main Content -->
+    <main class="container-fluid mt-4">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-light mt-5 py-4">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5>نظام إدارة المكاتبات</h5>
+                    <p class="mb-1">التمثيل التجاري المصري</p>
+                    <p class="mb-0">
+                        <small>جمهورية مصر العربية - وزارة الاستثمار والتجارة الخارجية</small>
+                    </p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <img src="{{ url_for('static', filename='images/postman.png') }}" 
+                         alt="البوسطجي" 
+                         class="img-fluid" style="max-height: 60px; opacity: 0.7;">
+                    <p class="mt-2 mb-0">
+                        <small>© 2024 جميع الحقوق محفوظة</small>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Custom JS -->
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>
