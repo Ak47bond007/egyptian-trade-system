@@ -1,0 +1,268 @@
+{% extends "base.html" %}
+
+{% block title %}الصفحة الرئيسية - نظام إدارة المكاتبات{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Statistics Cards -->
+    <div class="col-12 mb-4">
+        <div class="row">
+            <div class="col-md-3 mb-3">
+                <div class="card bg-primary text-white h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h4 class="card-title">{{ stats.total_correspondence }}</h4>
+                                <p class="card-text">إجمالي المكاتبات</p>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="fas fa-envelope fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-3 mb-3">
+                <div class="card bg-success text-white h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h4 class="card-title">{{ stats.total_incoming }}</h4>
+                                <p class="card-text">المكاتبات الواردة</p>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="fas fa-inbox fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-3 mb-3">
+                <div class="card bg-info text-white h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h4 class="card-title">{{ stats.total_outgoing }}</h4>
+                                <p class="card-text">المكاتبات الصادرة</p>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="fas fa-paper-plane fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-3 mb-3">
+                <div class="card bg-warning text-dark h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h4 class="card-title">{{ stats.total_attachments }}</h4>
+                                <p class="card-text">إجمالي المرفقات</p>
+                            </div>
+                            <div class="align-self-center">
+                                <i class="fas fa-paperclip fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-primary text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-bolt"></i> إجراءات سريعة
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('new_correspondence') }}" class="btn btn-success">
+                        <i class="fas fa-plus"></i> إضافة مكاتبة جديدة
+                    </a>
+                    <a href="{{ url_for('correspondence_list', type='incoming') }}" class="btn btn-outline-success">
+                        <i class="fas fa-inbox"></i> عرض الواردة
+                    </a>
+                    <a href="{{ url_for('correspondence_list', type='outgoing') }}" class="btn btn-outline-info">
+                        <i class="fas fa-paper-plane"></i> عرض الصادرة
+                    </a>
+                    <a href="{{ url_for('correspondence_list', status='pending') }}" class="btn btn-outline-warning">
+                        <i class="fas fa-clock"></i> المعلقة
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Recent Correspondence -->
+    <div class="col-md-8 mb-4">
+        <div class="card h-100">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="card-title mb-0">
+                    <i class="fas fa-history"></i> آخر المكاتبات
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if correspondence %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>الرقم المرجعي</th>
+                                    <th>الموضوع</th>
+                                    <th>النوع</th>
+                                    <th>المرفقات</th>
+                                    <th>التاريخ</th>
+                                    <th>الحالة</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in correspondence %}
+                                <tr>
+                                    <td>
+                                        <a href="{{ url_for('view_correspondence', id=item.id) }}" 
+                                           class="text-decoration-none">
+                                            <strong>{{ item.reference_number }}</strong>
+                                        </a>
+                                    </td>
+                                    <td>
+                                        <span title="{{ item.subject }}">
+                                            {{ item.subject[:50] }}{% if item.subject|length > 50 %}...{% endif %}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        {% if item.type == 'incoming' %}
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-inbox"></i> واردة
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-info">
+                                                <i class="fas fa-paper-plane"></i> صادرة
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if item.attachments %}
+                                            <span class="badge bg-warning text-dark">
+                                                <i class="fas fa-paperclip"></i> {{ item.attachments|length }}
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <small>{{ item.date_created.strftime('%d/%m/%Y') }}</small>
+                                    </td>
+                                    <td>
+                                        {% if item.status == 'pending' %}
+                                            <span class="badge bg-warning text-dark">معلقة</span>
+                                        {% elif item.status == 'processed' %}
+                                            <span class="badge bg-success">معالجة</span>
+                                        {% elif item.status == 'archived' %}
+                                            <span class="badge bg-secondary">مؤرشفة</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="text-center mt-3">
+                        <a href="{{ url_for('correspondence_list') }}" class="btn btn-outline-primary">
+                            <i class="fas fa-list"></i> عرض جميع المكاتبات
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">لا توجد مكاتبات حتى الآن</h5>
+                        <p class="text-muted">ابدأ بإضافة أول مكاتبة</p>
+                        <a href="{{ url_for('new_correspondence') }}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> إضافة مكاتبة جديدة
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Welcome Message -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card border-0 bg-light">
+            <div class="card-body text-center py-5">
+                <img src="{{ url_for('static', filename='images/postman.png') }}" 
+                     alt="البوسطجي" 
+                     class="img-fluid mb-3" style="max-height: 100px; opacity: 0.8;">
+                <h3 class="text-primary">مرحباً بك في نظام إدارة المكاتبات</h3>
+                <p class="text-muted lead">
+                    نظام متكامل لإدارة المكاتبات الواردة والصادرة مع إمكانية رفع المرفقات وطباعتها
+                </p>
+                <div class="row mt-4">
+                    <div class="col-md-4 mb-3">
+                        <div class="d-flex align-items-center justify-content-center">
+                            <i class="fas fa-cloud-upload-alt fa-2x text-primary me-3"></i>
+                            <div class="text-start">
+                                <h6 class="mb-0">رفع المرفقات</h6>
+                                <small class="text-muted">دعم جميع أنواع الملفات</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="d-flex align-items-center justify-content-center">
+                            <i class="fas fa-shield-alt fa-2x text-success me-3"></i>
+                            <div class="text-start">
+                                <h6 class="mb-0">حماية الملفات</h6>
+                                <small class="text-muted">وصول آمن ومحمي</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <div class="d-flex align-items-center justify-content-center">
+                            <i class="fas fa-print fa-2x text-info me-3"></i>
+                            <div class="text-start">
+                                <h6 class="mb-0">طباعة شاملة</h6>
+                                <small class="text-muted">طباعة المكاتبات مع المرفقات</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Add moment.js for date formatting
+    function moment(date) {
+        return {
+            format: function(format) {
+                const d = new Date(date);
+                const day = String(d.getDate()).padStart(2, '0');
+                const month = String(d.getMonth() + 1).padStart(2, '0');
+                const year = d.getFullYear();
+                
+                if (format === 'DD/MM/YYYY') {
+                    return `${day}/${month}/${year}`;
+                }
+                return d.toLocaleDateString('ar-EG');
+            }
+        };
+    }
+    
+    // Auto-refresh statistics every 30 seconds
+    setInterval(function() {
+        // You can add AJAX call here to refresh stats
+    }, 30000);
+</script>
+{% endblock %}

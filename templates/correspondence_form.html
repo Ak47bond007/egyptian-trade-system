@@ -1,0 +1,420 @@
+{% extends "base.html" %}
+
+{% block title %}
+{% if correspondence %}تعديل مكاتبة{% else %}مكاتبة جديدة{% endif %} - نظام إدارة المكاتبات
+{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/dropzone@5.9.3/dist/min/dropzone.min.css" rel="stylesheet">
+<style>
+    .dropzone {
+        border: 2px dashed #007bff;
+        border-radius: 8px;
+        background: #f8f9fa;
+        transition: all 0.3s ease;
+    }
+    .dropzone:hover {
+        border-color: #0056b3;
+        background: #e9ecef;
+    }
+    .dropzone .dz-message {
+        text-align: center;
+        margin: 2em 0;
+        color: #6c757d;
+    }
+    .required-field {
+        border-right: 3px solid #dc3545;
+    }
+    .form-section {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+    .section-header {
+        background: linear-gradient(45deg, #007bff, #0056b3);
+        color: white;
+        padding: 1rem;
+        border-radius: 8px 8px 0 0;
+        margin: 0;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <!-- Page Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="h3 mb-1">
+                    <i class="fas fa-{% if correspondence %}edit{% else %}plus{% endif %} text-primary"></i>
+                    {% if correspondence %}تعديل مكاتبة{% else %}إضافة مكاتبة جديدة{% endif %}
+                </h2>
+                <p class="text-muted mb-0">
+                    {% if correspondence %}
+                        تعديل بيانات المكاتبة رقم: {{ correspondence.reference_number }}
+                    {% else %}
+                        إدخال بيانات مكاتبة واردة أو صادرة جديدة
+                    {% endif %}
+                </p>
+            </div>
+            <a href="{{ url_for('correspondence_list') }}" class="btn btn-secondary">
+                <i class="fas fa-arrow-right"></i> رجوع للقائمة
+            </a>
+        </div>
+
+        <!-- Form -->
+        <form method="POST" enctype="multipart/form-data" id="correspondence-form">
+            <!-- Basic Information Section -->
+            <div class="form-section">
+                <h5 class="section-header">
+                    <i class="fas fa-info-circle"></i> البيانات الأساسية
+                </h5>
+                <div class="p-4">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="subject" class="form-label">
+                                <i class="fas fa-tag text-primary"></i> موضوع المكاتبة
+                                <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control required-field" id="subject" name="subject" 
+                                   value="{{ correspondence.subject if correspondence else '' }}" 
+                                   placeholder="أدخل موضوع المكاتبة..." required>
+                        </div>
+                        
+                        <div class="col-md-3 mb-3">
+                            <label for="type" class="form-label">
+                                <i class="fas fa-exchange-alt text-primary"></i> نوع المكاتبة
+                                <span class="text-danger">*</span>
+                            </label>
+                            <select class="form-select required-field" id="type" name="type" required>
+                                <option value="">اختر النوع</option>
+                                <option value="incoming" 
+                                        {% if correspondence and correspondence.type == 'incoming' %}selected{% endif %}>
+                                    <i class="fas fa-inbox"></i> واردة
+                                </option>
+                                <option value="outgoing" 
+                                        {% if correspondence and correspondence.type == 'outgoing' %}selected{% endif %}>
+                                    <i class="fas fa-paper-plane"></i> صادرة
+                                </option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-3 mb-3">
+                            <label for="priority" class="form-label">
+                                <i class="fas fa-exclamation-triangle text-primary"></i> الأولوية
+                            </label>
+                            <select class="form-select" id="priority" name="priority">
+                                <option value="low" 
+                                        {% if correspondence and correspondence.priority == 'low' %}selected{% endif %}>
+                                    منخفضة
+                                </option>
+                                <option value="normal" 
+                                        {% if correspondence and correspondence.priority == 'normal' %}selected{% elif not correspondence %}selected{% endif %}>
+                                    عادية
+                                </option>
+                                <option value="high" 
+                                        {% if correspondence and correspondence.priority == 'high' %}selected{% endif %}>
+                                    عالية
+                                </option>
+                                <option value="urgent" 
+                                        {% if correspondence and correspondence.priority == 'urgent' %}selected{% endif %}>
+                                    عاجلة
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="sender" class="form-label">
+                                <i class="fas fa-user text-primary"></i> المرسل / الجهة المرسلة
+                            </label>
+                            <input type="text" class="form-control" id="sender" name="sender" 
+                                   value="{{ correspondence.sender if correspondence else '' }}" 
+                                   placeholder="اسم المرسل أو الجهة المرسلة">
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="recipient" class="form-label">
+                                <i class="fas fa-user-check text-primary"></i> المستقبل / الجهة المستقبلة
+                            </label>
+                            <input type="text" class="form-control" id="recipient" name="recipient" 
+                                   value="{{ correspondence.recipient if correspondence else '' }}" 
+                                   placeholder="اسم المستقبل أو الجهة المستقبلة">
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="date_received" class="form-label">
+                                <i class="fas fa-calendar text-primary"></i> تاريخ الاستلام
+                            </label>
+                            <input type="date" class="form-control" id="date_received" name="date_received" 
+                                   value="{% if correspondence and correspondence.date_received %}{{ correspondence.date_received.strftime('%Y-%m-%d') }}{% endif %}">
+                        </div>
+                        
+                        {% if correspondence %}
+                        <div class="col-md-6 mb-3">
+                            <label for="status" class="form-label">
+                                <i class="fas fa-tasks text-primary"></i> حالة المعالجة
+                            </label>
+                            <select class="form-select" id="status" name="status">
+                                <option value="pending" 
+                                        {% if correspondence.status == 'pending' %}selected{% endif %}>
+                                    معلقة
+                                </option>
+                                <option value="processed" 
+                                        {% if correspondence.status == 'processed' %}selected{% endif %}>
+                                    معالجة
+                                </option>
+                                <option value="archived" 
+                                        {% if correspondence.status == 'archived' %}selected{% endif %}>
+                                    مؤرشفة
+                                </option>
+                            </select>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Content Section -->
+            <div class="form-section">
+                <h5 class="section-header">
+                    <i class="fas fa-file-alt"></i> محتوى المكاتبة
+                </h5>
+                <div class="p-4">
+                    <label for="content" class="form-label">
+                        <i class="fas fa-edit text-primary"></i> نص المكاتبة
+                        <span class="text-danger">*</span>
+                    </label>
+                    <textarea class="form-control required-field" id="content" name="content" rows="8" 
+                              placeholder="أدخل نص المكاتبة بالتفصيل..." required>{{ correspondence.content if correspondence else '' }}</textarea>
+                    <div class="form-text">يمكنك كتابة محتوى المكاتبة بالتفصيل هنا</div>
+                </div>
+            </div>
+
+            <!-- Attachments Section -->
+            <div class="form-section">
+                <h5 class="section-header">
+                    <i class="fas fa-paperclip"></i> المرفقات
+                </h5>
+                <div class="p-4">
+                    <!-- Existing Attachments -->
+                    {% if correspondence and correspondence.attachments %}
+                    <div class="mb-4">
+                        <h6 class="text-secondary">
+                            <i class="fas fa-folder-open"></i> المرفقات الحالية
+                        </h6>
+                        <div class="row">
+                            {% for attachment in correspondence.attachments %}
+                            <div class="col-md-6 col-lg-4 mb-3">
+                                <div class="card border-secondary">
+                                    <div class="card-body p-3">
+                                        <div class="d-flex align-items-center justify-content-between">
+                                            <div class="flex-grow-1">
+                                                <h6 class="card-title mb-1 text-truncate" title="{{ attachment.filename }}">
+                                                    <i class="fas fa-file"></i> {{ attachment.filename }}
+                                                </h6>
+                                                <small class="text-muted">
+                                                    {{ "%.1f"|format(attachment.file_size / 1024) }} KB
+                                                </small>
+                                            </div>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{{ url_for('view_attachment', id=attachment.id) }}" 
+                                                   class="btn btn-outline-primary btn-sm" target="_blank" title="عرض">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <a href="{{ url_for('download_attachment', id=attachment.id) }}" 
+                                                   class="btn btn-outline-success btn-sm" title="تحميل">
+                                                    <i class="fas fa-download"></i>
+                                                </a>
+                                                <button type="button" class="btn btn-outline-danger btn-sm" 
+                                                        onclick="deleteAttachment({{ attachment.id }})" title="حذف">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- New Attachments Upload -->
+                    <div>
+                        <h6 class="text-secondary">
+                            <i class="fas fa-cloud-upload-alt"></i> إضافة مرفقات جديدة
+                        </h6>
+                        <div class="dropzone" id="attachment-dropzone">
+                            <div class="dz-message needsclick">
+                                <i class="fas fa-cloud-upload-alt fa-3x text-primary mb-3"></i>
+                                <h5>اسحب الملفات هنا أو انقر للتحديد</h5>
+                                <p class="text-muted">
+                                    يمكنك رفع ملفات PDF، Word، Excel، PowerPoint، الصور، والمحفوظات
+                                    <br>
+                                    <small>الحد الأقصى لحجم الملف: 50MB</small>
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <!-- Traditional file input as fallback -->
+                        <div class="mt-3">
+                            <label for="attachments" class="form-label">
+                                <i class="fas fa-folder-plus text-primary"></i> أو اختر الملفات تقليدياً
+                            </label>
+                            <input type="file" class="form-control" id="attachments" name="attachments" 
+                                   multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.gif,.zip,.rar">
+                            <div class="form-text">
+                                يمكنك اختيار عدة ملفات مرة واحدة. الأنواع المدعومة: PDF, Word, Excel, PowerPoint, صور, محفوظات
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="form-section">
+                <div class="p-4">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <button type="submit" class="btn btn-primary btn-lg me-2">
+                                <i class="fas fa-save"></i>
+                                {% if correspondence %}تحديث المكاتبة{% else %}حفظ المكاتبة{% endif %}
+                            </button>
+                            <button type="reset" class="btn btn-outline-secondary btn-lg">
+                                <i class="fas fa-undo"></i> إعادة تعيين
+                            </button>
+                        </div>
+                        <div>
+                            <a href="{{ url_for('correspondence_list') }}" class="btn btn-secondary btn-lg">
+                                <i class="fas fa-times"></i> إلغاء
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/dropzone@5.9.3/dist/min/dropzone.min.js"></script>
+<script>
+// Initialize Dropzone
+Dropzone.autoDiscover = false;
+let attachmentDropzone = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Configure Dropzone
+    attachmentDropzone = new Dropzone("#attachment-dropzone", {
+        url: "#", // We'll handle the upload in the main form
+        autoProcessQueue: false,
+        uploadMultiple: true,
+        parallelUploads: 10,
+        maxFilesize: 50, // 50MB
+        acceptedFiles: ".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.gif,.bmp,.tiff,.zip,.rar,.7z,.mp4,.avi,.mov,.txt",
+        addRemoveLinks: true,
+        dictDefaultMessage: "اسحب الملفات هنا أو انقر للتحديد",
+        dictFallbackMessage: "متصفحك لا يدعم خاصية سحب وإفلات الملفات",
+        dictRemoveFile: "حذف الملف",
+        dictCancelUpload: "إلغاء التحميل",
+        dictMaxFilesExceeded: "لا يمكن رفع أكثر من هذا العدد من الملفات",
+        
+        init: function() {
+            let myDropzone = this;
+            
+            // Handle form submission
+            document.getElementById('correspondence-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                if (myDropzone.getQueuedFiles().length > 0) {
+                    // Add queued files to the traditional file input
+                    let fileInput = document.getElementById('attachments');
+                    let dataTransfer = new DataTransfer();
+                    
+                    // Add existing files from traditional input
+                    for (let i = 0; i < fileInput.files.length; i++) {
+                        dataTransfer.items.add(fileInput.files[i]);
+                    }
+                    
+                    // Add files from dropzone
+                    myDropzone.getQueuedFiles().forEach(function(file) {
+                        dataTransfer.items.add(file);
+                    });
+                    
+                    fileInput.files = dataTransfer.files;
+                }
+                
+                // Submit the form
+                this.submit();
+            });
+        }
+    });
+    
+    // Form validation
+    const form = document.getElementById('correspondence-form');
+    const requiredFields = document.querySelectorAll('.required-field');
+    
+    form.addEventListener('submit', function(e) {
+        let isValid = true;
+        
+        requiredFields.forEach(function(field) {
+            if (!field.value.trim()) {
+                field.classList.add('is-invalid');
+                isValid = false;
+            } else {
+                field.classList.remove('is-invalid');
+            }
+        });
+        
+        if (!isValid) {
+            e.preventDefault();
+            alert('يرجى ملء جميع الحقول المطلوبة');
+        }
+    });
+    
+    // Update sender/recipient fields based on type
+    document.getElementById('type').addEventListener('change', function() {
+        const senderLabel = document.querySelector('label[for="sender"] i').nextSibling;
+        const recipientLabel = document.querySelector('label[for="recipient"] i').nextSibling;
+        
+        if (this.value === 'incoming') {
+            senderLabel.textContent = ' المرسل / الجهة المرسلة';
+            recipientLabel.textContent = ' المستقبل (التمثيل التجاري)';
+        } else if (this.value === 'outgoing') {
+            senderLabel.textContent = ' المرسل (التمثيل التجاري)';
+            recipientLabel.textContent = ' المستقبل / الجهة المستقبلة';
+        }
+    });
+});
+
+// Delete attachment function
+function deleteAttachment(attachmentId) {
+    if (confirm('هل أنت متأكد من حذف هذا المرفق؟')) {
+        fetch(`/attachment/${attachmentId}/delete`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                location.reload();
+            } else {
+                alert('حدث خطأ أثناء حذف المرفق');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('حدث خطأ أثناء حذف المرفق');
+        });
+    }
+}
+</script>
+{% endblock %}

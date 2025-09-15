@@ -1,0 +1,428 @@
+{% extends "base.html" %}
+
+{% block title %}قائمة المكاتبات - نظام إدارة المكاتبات{% endblock %}
+
+{% block extra_css %}
+<style>
+    .correspondence-card {
+        transition: all 0.3s ease;
+        border-right: 4px solid transparent;
+    }
+    .correspondence-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    .correspondence-card.incoming {
+        border-right-color: #28a745;
+    }
+    .correspondence-card.outgoing {
+        border-right-color: #17a2b8;
+    }
+    .filter-section {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    .priority-badge {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+    }
+    .table-hover tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Page Header -->
+    <div class="col-12 mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2 class="h3 mb-1">
+                    <i class="fas fa-list text-primary"></i> قائمة المكاتبات
+                </h2>
+                <p class="text-muted mb-0">
+                    إدارة وعرض جميع المكاتبات الواردة والصادرة
+                    {% if type_filter %}
+                        - {{ 'الواردة' if type_filter == 'incoming' else 'الصادرة' }}
+                    {% endif %}
+                    {% if status_filter %}
+                        - {{ 'المعلقة' if status_filter == 'pending' else 'المعالجة' if status_filter == 'processed' else 'المؤرشفة' }}
+                    {% endif %}
+                </p>
+            </div>
+            <a href="{{ url_for('new_correspondence') }}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> مكاتبة جديدة
+            </a>
+        </div>
+    </div>
+
+    <!-- Filters Section -->
+    <div class="col-12">
+        <div class="filter-section">
+            <h5 class="mb-3">
+                <i class="fas fa-filter text-primary"></i> تصفية النتائج
+            </h5>
+            <form method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label for="type" class="form-label">نوع المكاتبة</label>
+                    <select class="form-select" id="type" name="type">
+                        <option value="">جميع الأنواع</option>
+                        <option value="incoming" {{ 'selected' if type_filter == 'incoming' }}>
+                            الواردة
+                        </option>
+                        <option value="outgoing" {{ 'selected' if type_filter == 'outgoing' }}>
+                            الصادرة
+                        </option>
+                    </select>
+                </div>
+                
+                <div class="col-md-3">
+                    <label for="status" class="form-label">الحالة</label>
+                    <select class="form-select" id="status" name="status">
+                        <option value="">جميع الحالات</option>
+                        <option value="pending" {{ 'selected' if status_filter == 'pending' }}>
+                            معلقة
+                        </option>
+                        <option value="processed" {{ 'selected' if status_filter == 'processed' }}>
+                            معالجة
+                        </option>
+                        <option value="archived" {{ 'selected' if status_filter == 'archived' }}>
+                            مؤرشفة
+                        </option>
+                    </select>
+                </div>
+                
+                <div class="col-md-4">
+                    <label for="search" class="form-label">البحث</label>
+                    <input type="text" class="form-control" id="search" name="search" 
+                           placeholder="البحث في الموضوع أو الرقم المرجعي...">
+                </div>
+                
+                <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search"></i> بحث
+                        </button>
+                    </div>
+                </div>
+            </form>
+            
+            <!-- Quick Filter Buttons -->
+            <div class="mt-3">
+                <div class="btn-group" role="group">
+                    <a href="{{ url_for('correspondence_list') }}" 
+                       class="btn btn-outline-secondary {{ 'active' if not type_filter and not status_filter }}">
+                        <i class="fas fa-list"></i> الكل
+                    </a>
+                    <a href="{{ url_for('correspondence_list', type='incoming') }}" 
+                       class="btn btn-outline-success {{ 'active' if type_filter == 'incoming' }}">
+                        <i class="fas fa-inbox"></i> الواردة
+                    </a>
+                    <a href="{{ url_for('correspondence_list', type='outgoing') }}" 
+                       class="btn btn-outline-info {{ 'active' if type_filter == 'outgoing' }}">
+                        <i class="fas fa-paper-plane"></i> الصادرة
+                    </a>
+                    <a href="{{ url_for('correspondence_list', status='pending') }}" 
+                       class="btn btn-outline-warning {{ 'active' if status_filter == 'pending' }}">
+                        <i class="fas fa-clock"></i> معلقة
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Section -->
+    <div class="col-12">
+        {% if correspondence.items %}
+            <!-- Table View -->
+            <div class="card">
+                <div class="card-header bg-light">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="fas fa-table"></i> النتائج ({{ correspondence.total }} مكاتبة)
+                        </h5>
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn btn-outline-primary active" onclick="showTableView()">
+                                <i class="fas fa-table"></i> جدول
+                            </button>
+                            <button class="btn btn-outline-primary" onclick="showCardView()">
+                                <i class="fas fa-th-large"></i> بطاقات
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-0">
+                    <!-- Table View -->
+                    <div id="table-view">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>الرقم المرجعي</th>
+                                        <th>الموضوع</th>
+                                        <th>النوع</th>
+                                        <th>المرسل/المستقبل</th>
+                                        <th>المرفقات</th>
+                                        <th>الأولوية</th>
+                                        <th>التاريخ</th>
+                                        <th>الحالة</th>
+                                        <th>الإجراءات</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for item in correspondence.items %}
+                                    <tr>
+                                        <td>
+                                            <a href="{{ url_for('view_correspondence', id=item.id) }}" 
+                                               class="text-decoration-none fw-bold">
+                                                {{ item.reference_number }}
+                                            </a>
+                                        </td>
+                                        <td>
+                                            <span title="{{ item.subject }}">
+                                                {{ item.subject[:40] }}{% if item.subject|length > 40 %}...{% endif %}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if item.type == 'incoming' %}
+                                                <span class="badge bg-success">
+                                                    <i class="fas fa-inbox"></i> واردة
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-info">
+                                                    <i class="fas fa-paper-plane"></i> صادرة
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <small>
+                                                {% if item.type == 'incoming' %}
+                                                    من: {{ item.sender or 'غير محدد' }}
+                                                {% else %}
+                                                    إلى: {{ item.recipient or 'غير محدد' }}
+                                                {% endif %}
+                                            </small>
+                                        </td>
+                                        <td>
+                                            {% if item.attachments %}
+                                                <span class="badge bg-warning text-dark">
+                                                    <i class="fas fa-paperclip"></i> {{ item.attachments|length }}
+                                                </span>
+                                            {% else %}
+                                                <span class="text-muted">-</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if item.priority == 'urgent' %}
+                                                <span class="badge bg-danger priority-badge">عاجلة</span>
+                                            {% elif item.priority == 'high' %}
+                                                <span class="badge bg-warning text-dark priority-badge">عالية</span>
+                                            {% elif item.priority == 'low' %}
+                                                <span class="badge bg-secondary priority-badge">منخفضة</span>
+                                            {% else %}
+                                                <span class="badge bg-light text-dark priority-badge">عادية</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <small>{{ item.date_created.strftime('%d/%m/%Y') }}</small>
+                                        </td>
+                                        <td>
+                                            {% if item.status == 'pending' %}
+                                                <span class="badge bg-warning text-dark">معلقة</span>
+                                            {% elif item.status == 'processed' %}
+                                                <span class="badge bg-success">معالجة</span>
+                                            {% elif item.status == 'archived' %}
+                                                <span class="badge bg-secondary">مؤرشفة</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{{ url_for('view_correspondence', id=item.id) }}" 
+                                                   class="btn btn-outline-primary btn-sm" title="عرض">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <a href="{{ url_for('edit_correspondence', id=item.id) }}" 
+                                                   class="btn btn-outline-secondary btn-sm" title="تعديل">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                                <a href="{{ url_for('print_correspondence', id=item.id) }}" 
+                                                   class="btn btn-outline-info btn-sm" title="طباعة" target="_blank">
+                                                    <i class="fas fa-print"></i>
+                                                </a>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Card View (Hidden by default) -->
+                    <div id="card-view" style="display: none;" class="p-3">
+                        <div class="row">
+                            {% for item in correspondence.items %}
+                            <div class="col-lg-4 col-md-6 mb-4">
+                                <div class="card correspondence-card {{ item.type }} h-100">
+                                    <div class="card-header">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <strong class="text-primary">{{ item.reference_number }}</strong>
+                                            {% if item.type == 'incoming' %}
+                                                <span class="badge bg-success">
+                                                    <i class="fas fa-inbox"></i> واردة
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-info">
+                                                    <i class="fas fa-paper-plane"></i> صادرة
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <h6 class="card-title">{{ item.subject }}</h6>
+                                        <p class="card-text text-muted">
+                                            {{ item.content[:100] }}{% if item.content|length > 100 %}...{% endif %}
+                                        </p>
+                                        
+                                        <div class="mb-2">
+                                            {% if item.attachments %}
+                                                <span class="badge bg-warning text-dark me-2">
+                                                    <i class="fas fa-paperclip"></i> {{ item.attachments|length }} مرفق
+                                                </span>
+                                            {% endif %}
+                                            
+                                            {% if item.priority == 'urgent' %}
+                                                <span class="badge bg-danger">عاجلة</span>
+                                            {% elif item.priority == 'high' %}
+                                                <span class="badge bg-warning text-dark">عالية</span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="card-footer bg-light">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <small class="text-muted">{{ item.date_created.strftime('%d/%m/%Y') }}</small>
+                                            <div class="btn-group btn-group-sm">
+                                                <a href="{{ url_for('view_correspondence', id=item.id) }}" 
+                                                   class="btn btn-primary btn-sm">
+                                                    <i class="fas fa-eye"></i>
+                                                </a>
+                                                <a href="{{ url_for('edit_correspondence', id=item.id) }}" 
+                                                   class="btn btn-secondary btn-sm">
+                                                    <i class="fas fa-edit"></i>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            {% if correspondence.pages > 1 %}
+            <nav aria-label="تصفح الصفحات" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if correspondence.has_prev %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('correspondence_list', page=correspondence.prev_num, type=type_filter, status=status_filter) }}">
+                                <i class="fas fa-chevron-right"></i> السابق
+                            </a>
+                        </li>
+                    {% endif %}
+                    
+                    {% for page_num in correspondence.iter_pages() %}
+                        {% if page_num %}
+                            {% if page_num != correspondence.page %}
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ url_for('correspondence_list', page=page_num, type=type_filter, status=status_filter) }}">
+                                        {{ page_num }}
+                                    </a>
+                                </li>
+                            {% else %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ page_num }}</span>
+                                </li>
+                            {% endif %}
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link">...</span>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if correspondence.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('correspondence_list', page=correspondence.next_num, type=type_filter, status=status_filter) }}">
+                                التالي <i class="fas fa-chevron-left"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+
+        {% else %}
+            <!-- No Results -->
+            <div class="card">
+                <div class="card-body text-center py-5">
+                    <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">لا توجد مكاتبات</h5>
+                    <p class="text-muted">
+                        {% if type_filter or status_filter %}
+                            لا توجد مكاتبات تطابق معايير البحث المحددة
+                        {% else %}
+                            لم يتم إضافة أي مكاتبات بعد
+                        {% endif %}
+                    </p>
+                    <div class="mt-3">
+                        {% if type_filter or status_filter %}
+                            <a href="{{ url_for('correspondence_list') }}" class="btn btn-outline-primary me-2">
+                                <i class="fas fa-times"></i> إزالة التصفية
+                            </a>
+                        {% endif %}
+                        <a href="{{ url_for('new_correspondence') }}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> إضافة مكاتبة جديدة
+                        </a>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function showTableView() {
+    document.getElementById('table-view').style.display = 'block';
+    document.getElementById('card-view').style.display = 'none';
+    
+    // Update button states
+    document.querySelectorAll('.btn-group .btn').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+}
+
+function showCardView() {
+    document.getElementById('table-view').style.display = 'none';
+    document.getElementById('card-view').style.display = 'block';
+    
+    // Update button states
+    document.querySelectorAll('.btn-group .btn').forEach(btn => btn.classList.remove('active'));
+    event.target.classList.add('active');
+}
+
+// Auto-submit search on Enter
+document.getElementById('search').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        this.form.submit();
+    }
+});
+</script>
+{% endblock %}
