@@ -1,0 +1,335 @@
+{% extends "base.html" %}
+
+{% block title %}لوحة التحكم - نظام التجارة المصري{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-speedometer2"></i> لوحة التحكم</h1>
+    <div class="d-flex gap-2">
+        <button class="btn btn-success" onclick="exportData()">
+            <i class="bi bi-download"></i> تصدير البيانات
+        </button>
+        <button class="btn btn-info" onclick="importData()">
+            <i class="bi bi-upload"></i> استيراد البيانات
+        </button>
+        <button class="btn btn-warning" onclick="backup()">
+            <i class="bi bi-archive"></i> نسخة احتياطية
+        </button>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title">إجمالي المراسلات</h5>
+                        <h2 class="mb-0">{{ stats.total_correspondences }}</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-envelope-fill fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card text-white bg-warning">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title">في الانتظار</h5>
+                        <h2 class="mb-0">{{ stats.pending_correspondences }}</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-clock-fill fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card text-white bg-success">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title">جهات الاتصال</h5>
+                        <h2 class="mb-0">{{ stats.total_contacts }}</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-people-fill fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card text-white bg-info">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h5 class="card-title">الإدارات</h5>
+                        <h2 class="mb-0">{{ stats.total_departments }}</h2>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="bi bi-building fs-1"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-lightning"></i> إجراءات سريعة</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <a href="{{ url_for('add_correspondence') }}" class="btn btn-outline-primary w-100 mb-2">
+                            <i class="bi bi-plus-circle"></i><br>مراسلة جديدة
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="#" class="btn btn-outline-success w-100 mb-2">
+                            <i class="bi bi-person-plus"></i><br>جهة اتصال جديدة
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <button class="btn btn-outline-info w-100 mb-2" onclick="advancedSearch()">
+                            <i class="bi bi-search"></i><br>بحث متقدم
+                        </button>
+                    </div>
+                    <div class="col-md-3">
+                        <button class="btn btn-outline-warning w-100 mb-2" onclick="generateReport()">
+                            <i class="bi bi-file-earmark-text"></i><br>تقرير
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Correspondences -->
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="bi bi-clock-history"></i> المراسلات الحديثة</h5>
+                <a href="{{ url_for('correspondences') }}" class="btn btn-sm btn-outline-primary">عرض الكل</a>
+            </div>
+            <div class="card-body">
+                {% if stats.recent_correspondences %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>رقم المرجع</th>
+                                    <th>الموضوع</th>
+                                    <th>النوع</th>
+                                    <th>الحالة</th>
+                                    <th>التاريخ</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for correspondence in stats.recent_correspondences %}
+                                <tr onclick="window.location='{{ url_for('view_correspondence', id=correspondence.id) }}'" style="cursor: pointer;">
+                                    <td>{{ correspondence.reference_number }}</td>
+                                    <td>{{ correspondence.subject[:50] }}{% if correspondence.subject|length > 50 %}...{% endif %}</td>
+                                    <td>
+                                        <span class="badge {% if correspondence.type == 'incoming' %}bg-success{% else %}bg-primary{% endif %}">
+                                            {% if correspondence.type == 'incoming' %}وارد{% else %}صادر{% endif %}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge {% if correspondence.status == 'pending' %}bg-warning{% elif correspondence.status == 'processed' %}bg-success{% else %}bg-secondary{% endif %}">
+                                            {% if correspondence.status == 'pending' %}في الانتظار{% elif correspondence.status == 'processed' %}مُعالج{% else %}مؤرشف{% endif %}
+                                        </span>
+                                    </td>
+                                    <td>{{ correspondence.created_at.strftime('%Y-%m-%d') }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="bi bi-inbox fs-1"></i>
+                        <p class="mt-2">لا توجد مراسلات حديثة</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-bell"></i> الإشعارات</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    <div class="list-group-item d-flex justify-content-between align-items-start border-0">
+                        <div class="ms-2 me-auto">
+                            <div class="fw-bold">مراسلات تحتاج متابعة</div>
+                            <small>{{ stats.pending_correspondences }} مراسلة في الانتظار</small>
+                        </div>
+                        <span class="badge bg-warning rounded-pill">{{ stats.pending_correspondences }}</span>
+                    </div>
+                    <div class="list-group-item d-flex justify-content-between align-items-start border-0">
+                        <div class="ms-2 me-auto">
+                            <div class="fw-bold">النظام متصل</div>
+                            <small>جميع الأجهزة متزامنة</small>
+                        </div>
+                        <span class="badge bg-success rounded-pill"><i class="bi bi-check-circle"></i></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- System Status -->
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5><i class="bi bi-info-circle"></i> حالة النظام</h5>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-6">
+                        <div class="text-success">
+                            <i class="bi bi-wifi fs-3"></i>
+                            <p class="mb-0 small">متصل</p>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="text-success">
+                            <i class="bi bi-shield-check fs-3"></i>
+                            <p class="mb-0 small">آمن</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Import/Export Modals -->
+<div class="modal fade" id="exportModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">تصدير البيانات</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>اختر نوع التصدير:</p>
+                <div class="d-grid gap-2">
+                    <button class="btn btn-success" onclick="exportToExcel()">
+                        <i class="bi bi-file-earmark-excel"></i> تصدير إلى Excel
+                    </button>
+                    <button class="btn btn-info" onclick="exportToJSON()">
+                        <i class="bi bi-file-earmark-code"></i> تصدير إلى JSON
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="importModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">استيراد البيانات</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="importForm" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="importFile" class="form-label">اختر ملف للاستيراد</label>
+                        <input type="file" class="form-control" id="importFile" accept=".xlsx,.json">
+                    </div>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">استيراد</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function exportData() {
+    new bootstrap.Modal(document.getElementById('exportModal')).show();
+}
+
+function importData() {
+    new bootstrap.Modal(document.getElementById('importModal')).show();
+}
+
+function exportToExcel() {
+    window.location.href = '/api/export/excel';
+}
+
+function exportToJSON() {
+    window.location.href = '/api/export/json';
+}
+
+function backup() {
+    if (confirm('هل تريد إنشاء نسخة احتياطية من قاعدة البيانات؟')) {
+        window.location.href = '/api/backup';
+    }
+}
+
+function advancedSearch() {
+    window.location.href = '{{ url_for("correspondences") }}?advanced=1';
+}
+
+function generateReport() {
+    alert('ميزة التقارير قيد التطوير');
+}
+
+// Handle import form
+document.getElementById('importForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const fileInput = document.getElementById('importFile');
+    if (!fileInput.files[0]) {
+        alert('يرجى اختيار ملف للاستيراد');
+        return;
+    }
+    
+    const formData = new FormData();
+    formData.append('file', fileInput.files[0]);
+    
+    fetch('/api/import', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('تم الاستيراد بنجاح');
+            location.reload();
+        } else {
+            alert('خطأ في الاستيراد: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('خطأ في الاستيراد');
+    });
+    
+    bootstrap.Modal.getInstance(document.getElementById('importModal')).hide();
+});
+</script>
+{% endblock %}

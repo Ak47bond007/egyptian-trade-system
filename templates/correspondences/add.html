@@ -1,0 +1,522 @@
+{% extends "base.html" %}
+
+{% block title %}مراسلة جديدة - نظام التجارة المصري{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-plus-circle"></i> مراسلة جديدة</h1>
+    <a href="{{ url_for('correspondences') }}" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left"></i> العودة للقائمة
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <form method="POST" enctype="multipart/form-data" id="correspondenceForm">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="bi bi-info-circle"></i> معلومات أساسية</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="type" class="form-label">نوع المراسلة *</label>
+                                <select class="form-select" id="type" name="type" required>
+                                    <option value="">اختر النوع</option>
+                                    <option value="incoming">وارد</option>
+                                    <option value="outgoing">صادر</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="priority" class="form-label">الأولوية</label>
+                                <select class="form-select" id="priority" name="priority">
+                                    <option value="normal">عادية</option>
+                                    <option value="high">عالية</option>
+                                    <option value="low">منخفضة</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="subject" class="form-label">الموضوع *</label>
+                        <input type="text" class="form-control" id="subject" name="subject" required 
+                               placeholder="موضوع المراسلة">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="content" class="form-label">المحتوى *</label>
+                        <textarea class="form-control" id="content" name="content" rows="6" required 
+                                  placeholder="محتوى المراسلة التفصيلي"></textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="correspondence_date" class="form-label">تاريخ المراسلة *</label>
+                                <input type="date" class="form-control" id="correspondence_date" 
+                                       name="correspondence_date" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="received_date" class="form-label">تاريخ الاستلام</label>
+                                <input type="date" class="form-control" id="received_date" name="received_date">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="due_date" class="form-label">تاريخ الاستحقاق</label>
+                        <input type="date" class="form-control" id="due_date" name="due_date">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5><i class="bi bi-people"></i> معلومات الاتصال</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="border-bottom pb-2">المرسل</h6>
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="sender_type" 
+                                           id="sender_contact" value="contact" checked>
+                                    <label class="form-check-label" for="sender_contact">
+                                        من جهات الاتصال
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="sender_type" 
+                                           id="sender_external" value="external">
+                                    <label class="form-check-label" for="sender_external">
+                                        جهة خارجية
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div id="sender_contact_div">
+                                <select class="form-select" id="sender_id" name="sender_id">
+                                    <option value="">اختر المرسل</option>
+                                    {% for contact in contacts %}
+                                    <option value="{{ contact.id }}">
+                                        {{ contact.name }} - {{ contact.organization or '' }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div id="sender_external_div" class="d-none">
+                                <input type="text" class="form-control" name="sender_external" 
+                                       placeholder="اسم المرسل الخارجي">
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h6 class="border-bottom pb-2">المستقبل</h6>
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="recipient_type" 
+                                           id="recipient_contact" value="contact" checked>
+                                    <label class="form-check-label" for="recipient_contact">
+                                        من جهات الاتصال
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="recipient_type" 
+                                           id="recipient_external" value="external">
+                                    <label class="form-check-label" for="recipient_external">
+                                        جهة خارجية
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div id="recipient_contact_div">
+                                <select class="form-select" id="recipient_id" name="recipient_id">
+                                    <option value="">اختر المستقبل</option>
+                                    {% for contact in contacts %}
+                                    <option value="{{ contact.id }}">
+                                        {{ contact.name }} - {{ contact.organization or '' }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div id="recipient_external_div" class="d-none">
+                                <input type="text" class="form-control" name="recipient_external" 
+                                       placeholder="اسم المستقبل الخارجي">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5><i class="bi bi-building"></i> الإدارة والتعيين</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="department_id" class="form-label">الإدارة المختصة *</label>
+                                <select class="form-select" id="department_id" name="department_id" required>
+                                    <option value="">اختر الإدارة</option>
+                                    {% for dept in departments %}
+                                    <option value="{{ dept.id }}">{{ dept.name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="assigned_to" class="form-label">المسؤول</label>
+                                <select class="form-select" id="assigned_to" name="assigned_to">
+                                    <option value="">اختر المسؤول</option>
+                                    {% for user in users %}
+                                    <option value="{{ user.id }}">{{ user.full_name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5><i class="bi bi-paperclip"></i> المرفقات</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="attachments" class="form-label">رفع ملفات</label>
+                        <input type="file" class="form-control" id="attachments" name="attachments" 
+                               multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png">
+                        <div class="form-text">
+                            يمكن رفع ملفات PDF, Word, Excel, والصور. الحد الأقصى لحجم الملف: 16 ميجابايت
+                        </div>
+                    </div>
+                    
+                    <div id="file-preview" class="mt-3"></div>
+                </div>
+            </div>
+            
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                <button type="button" class="btn btn-outline-secondary" onclick="saveDraft()">
+                    <i class="bi bi-save"></i> حفظ كمسودة
+                </button>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-circle"></i> حفظ المراسلة
+                </button>
+            </div>
+        </form>
+    </div>
+    
+    <!-- Sidebar with quick actions -->
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-lightning"></i> إجراءات سريعة</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button type="button" class="btn btn-outline-success" onclick="addNewContact()">
+                        <i class="bi bi-person-plus"></i> إضافة جهة اتصال
+                    </button>
+                    <button type="button" class="btn btn-outline-info" onclick="searchContacts()">
+                        <i class="bi bi-search"></i> البحث في جهات الاتصال
+                    </button>
+                    <button type="button" class="btn btn-outline-warning" onclick="useTemplate()">
+                        <i class="bi bi-file-text"></i> استخدام قالب
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5><i class="bi bi-info-circle"></i> إرشادات</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled small">
+                    <li><i class="bi bi-check text-success"></i> استخدم رقم مرجع واضح ومفهوم</li>
+                    <li><i class="bi bi-check text-success"></i> اكتب موضوعاً دقيقاً ومختصراً</li>
+                    <li><i class="bi bi-check text-success"></i> أضف التواريخ المهمة</li>
+                    <li><i class="bi bi-check text-success"></i> حدد الأولوية حسب الأهمية</li>
+                    <li><i class="bi bi-check text-success"></i> ارفق المستندات المطلوبة</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5><i class="bi bi-clock-history"></i> المراسلات الحديثة</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    <!-- This would be populated via AJAX with recent correspondences -->
+                    <div class="text-muted text-center py-3">
+                        <small>سيتم عرض آخر المراسلات هنا</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Contact Modal -->
+<div class="modal fade" id="contactModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">إضافة جهة اتصال جديدة</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="contactForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="contact_name" class="form-label">الاسم *</label>
+                                <input type="text" class="form-control" id="contact_name" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="contact_organization" class="form-label">المؤسسة</label>
+                                <input type="text" class="form-control" id="contact_organization">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="contact_email" class="form-label">البريد الإلكتروني</label>
+                                <input type="email" class="form-control" id="contact_email">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="contact_phone" class="form-label">الهاتف</label>
+                                <input type="text" class="form-control" id="contact_phone">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="contact_position" class="form-label">المنصب</label>
+                        <input type="text" class="form-control" id="contact_position">
+                    </div>
+                    <div class="mb-3">
+                        <label for="contact_address" class="form-label">العنوان</label>
+                        <textarea class="form-control" id="contact_address" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                <button type="button" class="btn btn-primary" onclick="saveContact()">حفظ جهة الاتصال</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Set today's date as default
+document.getElementById('correspondence_date').value = new Date().toISOString().split('T')[0];
+
+// Handle sender type toggle
+document.querySelectorAll('input[name="sender_type"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+        if (this.value === 'contact') {
+            document.getElementById('sender_contact_div').classList.remove('d-none');
+            document.getElementById('sender_external_div').classList.add('d-none');
+        } else {
+            document.getElementById('sender_contact_div').classList.add('d-none');
+            document.getElementById('sender_external_div').classList.remove('d-none');
+        }
+    });
+});
+
+// Handle recipient type toggle
+document.querySelectorAll('input[name="recipient_type"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+        if (this.value === 'contact') {
+            document.getElementById('recipient_contact_div').classList.remove('d-none');
+            document.getElementById('recipient_external_div').classList.add('d-none');
+        } else {
+            document.getElementById('recipient_contact_div').classList.add('d-none');
+            document.getElementById('recipient_external_div').classList.remove('d-none');
+        }
+    });
+});
+
+// File preview
+document.getElementById('attachments').addEventListener('change', function() {
+    const filePreview = document.getElementById('file-preview');
+    filePreview.innerHTML = '';
+    
+    Array.from(this.files).forEach(file => {
+        const fileItem = document.createElement('div');
+        fileItem.className = 'alert alert-info d-flex justify-content-between align-items-center';
+        fileItem.innerHTML = `
+            <div>
+                <i class="bi bi-file-earmark"></i>
+                <strong>${file.name}</strong>
+                <small class="text-muted">(${(file.size / 1024 / 1024).toFixed(2)} MB)</small>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeFile(this, '${file.name}')">
+                <i class="bi bi-x"></i>
+            </button>
+        `;
+        filePreview.appendChild(fileItem);
+    });
+});
+
+function removeFile(button, filename) {
+    // Remove from preview
+    button.parentElement.remove();
+    
+    // Remove from file input (requires recreating the input)
+    const fileInput = document.getElementById('attachments');
+    const dt = new DataTransfer();
+    
+    Array.from(fileInput.files).forEach(file => {
+        if (file.name !== filename) {
+            dt.items.add(file);
+        }
+    });
+    
+    fileInput.files = dt.files;
+}
+
+function addNewContact() {
+    new bootstrap.Modal(document.getElementById('contactModal')).show();
+}
+
+function saveContact() {
+    const formData = {
+        name: document.getElementById('contact_name').value,
+        organization: document.getElementById('contact_organization').value,
+        email: document.getElementById('contact_email').value,
+        phone: document.getElementById('contact_phone').value,
+        position: document.getElementById('contact_position').value,
+        address: document.getElementById('contact_address').value
+    };
+    
+    if (!formData.name) {
+        alert('يرجى إدخال اسم جهة الاتصال');
+        return;
+    }
+    
+    fetch('/api/contacts', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Add to sender and recipient dropdowns
+            const option = `<option value="${data.contact.id}">${data.contact.name} - ${data.contact.organization || ''}</option>`;
+            document.getElementById('sender_id').insertAdjacentHTML('beforeend', option);
+            document.getElementById('recipient_id').insertAdjacentHTML('beforeend', option);
+            
+            // Close modal and reset form
+            bootstrap.Modal.getInstance(document.getElementById('contactModal')).hide();
+            document.getElementById('contactForm').reset();
+            
+            alert('تم إضافة جهة الاتصال بنجاح');
+        } else {
+            alert('حدث خطأ أثناء إضافة جهة الاتصال');
+        }
+    })
+    .catch(error => {
+        alert('حدث خطأ أثناء إضافة جهة الاتصال');
+    });
+}
+
+function saveDraft() {
+    // Implement draft saving functionality
+    alert('سيتم تنفيذ ميزة حفظ المسودة قريباً');
+}
+
+function searchContacts() {
+    // Implement contact search functionality
+    alert('سيتم تنفيذ ميزة البحث في جهات الاتصال قريباً');
+}
+
+function useTemplate() {
+    // Implement template functionality
+    alert('سيتم تنفيذ ميزة القوالب قريباً');
+}
+
+// Auto-save form data to localStorage
+function autoSave() {
+    const formData = new FormData(document.getElementById('correspondenceForm'));
+    const data = {};
+    for (let [key, value] of formData.entries()) {
+        if (key !== 'attachments') {
+            data[key] = value;
+        }
+    }
+    localStorage.setItem('correspondence_draft', JSON.stringify(data));
+}
+
+// Load saved draft
+function loadDraft() {
+    const saved = localStorage.getItem('correspondence_draft');
+    if (saved) {
+        const data = JSON.parse(saved);
+        Object.keys(data).forEach(key => {
+            const element = document.querySelector(`[name="${key}"]`);
+            if (element) {
+                element.value = data[key];
+            }
+        });
+    }
+}
+
+// Auto-save every 30 seconds
+setInterval(autoSave, 30000);
+
+// Load draft on page load
+document.addEventListener('DOMContentLoaded', function() {
+    if (confirm('هل تريد استعادة المسودة المحفوظة؟')) {
+        loadDraft();
+    }
+});
+
+// Clear draft on successful submit
+document.getElementById('correspondenceForm').addEventListener('submit', function() {
+    localStorage.removeItem('correspondence_draft');
+});
+
+// Form validation
+document.getElementById('correspondenceForm').addEventListener('submit', function(e) {
+    const subject = document.getElementById('subject').value;
+    const content = document.getElementById('content').value;
+    
+    if (subject.length < 5) {
+        e.preventDefault();
+        alert('يجب أن يكون الموضوع 5 أحرف على الأقل');
+        return;
+    }
+    
+    if (content.length < 10) {
+        e.preventDefault();
+        alert('يجب أن يكون المحتوى 10 أحرف على الأقل');
+        return;
+    }
+});
+</script>
+{% endblock %}

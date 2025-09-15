@@ -1,0 +1,405 @@
+{% extends "base.html" %}
+
+{% block title %}المراسلات - نظام التجارة المصري{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-envelope"></i> إدارة المراسلات</h1>
+    <a href="{{ url_for('add_correspondence') }}" class="btn btn-primary">
+        <i class="bi bi-plus-circle"></i> مراسلة جديدة
+    </a>
+</div>
+
+<!-- Search and Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-3">
+                <label for="search" class="form-label">البحث</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" class="form-control" id="search" name="search" 
+                           value="{{ search }}" placeholder="رقم المرجع، الموضوع، أو المحتوى">
+                </div>
+            </div>
+            
+            <div class="col-md-2">
+                <label for="type" class="form-label">النوع</label>
+                <select class="form-select" id="type" name="type">
+                    <option value="">جميع الأنواع</option>
+                    <option value="incoming" {% if type_filter == 'incoming' %}selected{% endif %}>وارد</option>
+                    <option value="outgoing" {% if type_filter == 'outgoing' %}selected{% endif %}>صادر</option>
+                </select>
+            </div>
+            
+            <div class="col-md-2">
+                <label for="status" class="form-label">الحالة</label>
+                <select class="form-select" id="status" name="status">
+                    <option value="">جميع الحالات</option>
+                    <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>في الانتظار</option>
+                    <option value="processed" {% if status_filter == 'processed' %}selected{% endif %}>مُعالج</option>
+                    <option value="archived" {% if status_filter == 'archived' %}selected{% endif %}>مؤرشف</option>
+                </select>
+            </div>
+            
+            <div class="col-md-3">
+                <label for="department" class="form-label">الإدارة</label>
+                <select class="form-select" id="department" name="department">
+                    <option value="">جميع الإدارات</option>
+                    {% for dept in departments %}
+                    <option value="{{ dept.id }}" {% if department_filter == dept.id|string %}selected{% endif %}>
+                        {{ dept.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div class="col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-funnel"></i> تصفية
+                    </button>
+                </div>
+            </div>
+        </form>
+        
+        {% if search or type_filter or status_filter or department_filter %}
+        <div class="mt-3">
+            <a href="{{ url_for('correspondences') }}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-x-circle"></i> مسح الفلاتر
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Correspondences Table -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">قائمة المراسلات</h5>
+        <div class="btn-group" role="group">
+            <button type="button" class="btn btn-outline-success btn-sm" onclick="exportSelectedToExcel()">
+                <i class="bi bi-file-earmark-excel"></i> تصدير Excel
+            </button>
+            <button type="button" class="btn btn-outline-info btn-sm" onclick="printSelected()">
+                <i class="bi bi-printer"></i> طباعة
+            </button>
+        </div>
+    </div>
+    <div class="card-body">
+        {% if correspondences.items %}
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>
+                            <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                        </th>
+                        <th>رقم المرجع</th>
+                        <th>الموضوع</th>
+                        <th>النوع</th>
+                        <th>الحالة</th>
+                        <th>الأولوية</th>
+                        <th>الإدارة</th>
+                        <th>التاريخ</th>
+                        <th>المرفقات</th>
+                        <th>الإجراءات</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for correspondence in correspondences.items %}
+                    <tr id="correspondence-{{ correspondence.id }}">
+                        <td>
+                            <input type="checkbox" class="correspondence-checkbox" value="{{ correspondence.id }}">
+                        </td>
+                        <td>
+                            <a href="{{ url_for('view_correspondence', id=correspondence.id) }}" class="text-decoration-none">
+                                {{ correspondence.reference_number }}
+                            </a>
+                        </td>
+                        <td>
+                            <div class="text-truncate" style="max-width: 200px;" title="{{ correspondence.subject }}">
+                                {{ correspondence.subject }}
+                            </div>
+                        </td>
+                        <td>
+                            <span class="badge {% if correspondence.type == 'incoming' %}bg-success{% else %}bg-primary{% endif %}">
+                                {% if correspondence.type == 'incoming' %}وارد{% else %}صادر{% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge {% if correspondence.status == 'pending' %}bg-warning{% elif correspondence.status == 'processed' %}bg-success{% else %}bg-secondary{% endif %}">
+                                {% if correspondence.status == 'pending' %}في الانتظار{% elif correspondence.status == 'processed' %}مُعالج{% else %}مؤرشف{% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge {% if correspondence.priority == 'high' %}bg-danger{% elif correspondence.priority == 'normal' %}bg-info{% else %}bg-light text-dark{% endif %}">
+                                {% if correspondence.priority == 'high' %}عالية{% elif correspondence.priority == 'normal' %}عادية{% else %}منخفضة{% endif %}
+                            </span>
+                        </td>
+                        <td>{{ correspondence.department.name if correspondence.department else '' }}</td>
+                        <td>{{ correspondence.correspondence_date.strftime('%Y-%m-%d') if correspondence.correspondence_date else '' }}</td>
+                        <td>
+                            {% if correspondence.attachments %}
+                                <span class="badge bg-info">{{ correspondence.attachments|length }}</span>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <a href="{{ url_for('view_correspondence', id=correspondence.id) }}" 
+                                   class="btn btn-outline-primary" title="عرض">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="{{ url_for('edit_correspondence', id=correspondence.id) }}" 
+                                   class="btn btn-outline-warning" title="تحرير">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <button class="btn btn-outline-danger" title="حذف" 
+                                        onclick="deleteCorrespondence({{ correspondence.id }})">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if correspondences.pages > 1 %}
+        <nav aria-label="صفحات المراسلات">
+            <ul class="pagination justify-content-center">
+                {% if correspondences.has_prev %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('correspondences', page=correspondences.prev_num, search=search, type=type_filter, status=status_filter, department=department_filter) }}">السابق</a>
+                    </li>
+                {% endif %}
+                
+                {% for page_num in correspondences.iter_pages() %}
+                    {% if page_num %}
+                        {% if page_num != correspondences.page %}
+                            <li class="page-item">
+                                <a class="page-link" href="{{ url_for('correspondences', page=page_num, search=search, type=type_filter, status=status_filter, department=department_filter) }}">{{ page_num }}</a>
+                            </li>
+                        {% else %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ page_num }}</span>
+                            </li>
+                        {% endif %}
+                    {% else %}
+                        <li class="page-item disabled">
+                            <span class="page-link">...</span>
+                        </li>
+                    {% endif %}
+                {% endfor %}
+                
+                {% if correspondences.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('correspondences', page=correspondences.next_num, search=search, type=type_filter, status=status_filter, department=department_filter) }}">التالي</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+        
+        {% else %}
+        <div class="text-center text-muted py-5">
+            <i class="bi bi-inbox fs-1"></i>
+            <p class="mt-3">لا توجد مراسلات مطابقة لمعايير البحث</p>
+            <a href="{{ url_for('add_correspondence') }}" class="btn btn-primary">
+                <i class="bi bi-plus-circle"></i> إضافة مراسلة جديدة
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Bulk Actions Modal -->
+<div class="modal fade" id="bulkActionsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">إجراءات متعددة</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>اختر الإجراء المطلوب للمراسلات المحددة:</p>
+                <div class="d-grid gap-2">
+                    <button class="btn btn-warning" onclick="bulkUpdateStatus('processed')">
+                        تحديث الحالة إلى "مُعالج"
+                    </button>
+                    <button class="btn btn-secondary" onclick="bulkUpdateStatus('archived')">
+                        تحديث الحالة إلى "مؤرشف"
+                    </button>
+                    <button class="btn btn-danger" onclick="bulkDelete()">
+                        حذف المحدد
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleSelectAll() {
+    const selectAll = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('.correspondence-checkbox');
+    checkboxes.forEach(cb => cb.checked = selectAll.checked);
+}
+
+function getSelectedIds() {
+    const checkboxes = document.querySelectorAll('.correspondence-checkbox:checked');
+    return Array.from(checkboxes).map(cb => cb.value);
+}
+
+function exportSelectedToExcel() {
+    const selected = getSelectedIds();
+    if (selected.length === 0) {
+        alert('يرجى تحديد مراسلات للتصدير');
+        return;
+    }
+    
+    const ids = selected.join(',');
+    window.location.href = `/api/export/excel?ids=${ids}`;
+}
+
+function printSelected() {
+    const selected = getSelectedIds();
+    if (selected.length === 0) {
+        alert('يرجى تحديد مراسلات للطباعة');
+        return;
+    }
+    
+    const ids = selected.join(',');
+    window.open(`/api/print?ids=${ids}`, '_blank');
+}
+
+function deleteCorrespondence(id) {
+    if (confirm('هل أنت متأكد من حذف هذه المراسلة؟ لا يمكن التراجع عن هذا الإجراء.')) {
+        fetch(`/correspondences/${id}/delete`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => {
+            if (response.ok) {
+                document.getElementById(`correspondence-${id}`).remove();
+                showNotification('تم حذف المراسلة بنجاح', 'success');
+            } else {
+                showNotification('حدث خطأ أثناء الحذف', 'error');
+            }
+        })
+        .catch(error => {
+            showNotification('حدث خطأ أثناء الحذف', 'error');
+        });
+    }
+}
+
+function bulkUpdateStatus(status) {
+    const selected = getSelectedIds();
+    if (selected.length === 0) {
+        alert('يرجى تحديد مراسلات للتحديث');
+        return;
+    }
+    
+    fetch('/api/bulk-update-status', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            ids: selected,
+            status: status
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('حدث خطأ أثناء التحديث');
+        }
+    });
+    
+    bootstrap.Modal.getInstance(document.getElementById('bulkActionsModal')).hide();
+}
+
+function bulkDelete() {
+    const selected = getSelectedIds();
+    if (selected.length === 0) {
+        alert('يرجى تحديد مراسلات للحذف');
+        return;
+    }
+    
+    if (confirm(`هل أنت متأكد من حذف ${selected.length} مراسلة؟ لا يمكن التراجع عن هذا الإجراء.`)) {
+        fetch('/api/bulk-delete', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                ids: selected
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('حدث خطأ أثناء الحذف');
+            }
+        });
+    }
+    
+    bootstrap.Modal.getInstance(document.getElementById('bulkActionsModal')).hide();
+}
+
+// Auto-save search form
+document.addEventListener('DOMContentLoaded', function() {
+    const searchForm = document.querySelector('form');
+    const inputs = searchForm.querySelectorAll('input, select');
+    
+    inputs.forEach(input => {
+        input.addEventListener('change', function() {
+            // Auto-submit form on change for real-time filtering
+            if (this.name !== 'search') {
+                searchForm.submit();
+            }
+        });
+    });
+    
+    // Submit search on Enter
+    document.getElementById('search').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            searchForm.submit();
+        }
+    });
+});
+
+function showNotification(message, type) {
+    const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+    const alertHtml = `
+        <div class="alert ${alertClass} alert-dismissible fade show position-fixed" style="top: 20px; right: 20px; z-index: 1050;">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', alertHtml);
+    
+    // Auto-remove after 3 seconds
+    setTimeout(() => {
+        const alert = document.querySelector('.alert');
+        if (alert) {
+            bootstrap.Alert.getOrCreateInstance(alert).close();
+        }
+    }, 3000);
+}
+</script>
+{% endblock %}

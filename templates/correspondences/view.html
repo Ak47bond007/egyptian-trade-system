@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+
+{% block title %}عرض المراسلة - نظام التجارة المصري{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-envelope-open"></i> عرض المراسلة</h1>
+    <div class="btn-group">
+        <a href="{{ url_for('correspondences') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> العودة للقائمة
+        </a>
+        <a href="{{ url_for('edit_correspondence', id=correspondence.id) }}" class="btn btn-warning">
+            <i class="bi bi-pencil"></i> تحرير
+        </a>
+        <button class="btn btn-success" onclick="printCorrespondence()">
+            <i class="bi bi-printer"></i> طباعة
+        </button>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-info-circle"></i> تفاصيل المراسلة</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <strong>رقم المرجع:</strong>
+                        <span class="badge bg-primary fs-6">{{ correspondence.reference_number }}</span>
+                    </div>
+                    <div class="col-md-6">
+                        <strong>تاريخ المراسلة:</strong>
+                        {{ correspondence.correspondence_date.strftime('%Y-%m-%d') if correspondence.correspondence_date else 'غير محدد' }}
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <strong>النوع:</strong>
+                        <span class="badge {% if correspondence.type == 'incoming' %}bg-success{% else %}bg-primary{% endif %}">
+                            {% if correspondence.type == 'incoming' %}وارد{% else %}صادر{% endif %}
+                        </span>
+                    </div>
+                    <div class="col-md-6">
+                        <strong>الحالة:</strong>
+                        <span class="badge {% if correspondence.status == 'pending' %}bg-warning{% elif correspondence.status == 'processed' %}bg-success{% else %}bg-secondary{% endif %}">
+                            {% if correspondence.status == 'pending' %}في الانتظار{% elif correspondence.status == 'processed' %}مُعالج{% else %}مؤرشف{% endif %}
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <strong>الموضوع:</strong>
+                        <p class="mt-2">{{ correspondence.subject }}</p>
+                    </div>
+                </div>
+                
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <strong>المحتوى:</strong>
+                        <div class="mt-2 p-3 bg-light rounded">
+                            {{ correspondence.content|replace('\n', '<br>')|safe }}
+                        </div>
+                    </div>
+                </div>
+                
+                {% if correspondence.sender or correspondence.sender_external %}
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <strong>المرسل:</strong>
+                        {% if correspondence.sender %}
+                            {{ correspondence.sender.name }} - {{ correspondence.sender.organization or '' }}
+                        {% else %}
+                            {{ correspondence.sender_external }}
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+                
+                {% if correspondence.recipient or correspondence.recipient_external %}
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <strong>المستقبل:</strong>
+                        {% if correspondence.recipient %}
+                            {{ correspondence.recipient.name }} - {{ correspondence.recipient.organization or '' }}
+                        {% else %}
+                            {{ correspondence.recipient_external }}
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        {% if correspondence.attachments %}
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5><i class="bi bi-paperclip"></i> المرفقات</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for attachment in correspondence.attachments %}
+                    <div class="col-md-6 mb-3">
+                        <div class="border rounded p-3">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-1">{{ attachment.original_filename }}</h6>
+                                    <small class="text-muted">{{ (attachment.file_size / 1024 / 1024)|round(2) }} MB</small>
+                                </div>
+                                <div>
+                                    <a href="/attachments/{{ attachment.id }}/download" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-download"></i>
+                                    </a>
+                                    <a href="/attachments/{{ attachment.id }}/view" class="btn btn-sm btn-outline-info" target="_blank">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="bi bi-building"></i> معلومات الإدارة</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>الإدارة:</strong> {{ correspondence.department.name if correspondence.department else 'غير محدد' }}</p>
+                {% if correspondence.assignee %}
+                <p><strong>المسؤول:</strong> {{ correspondence.assignee.full_name }}</p>
+                {% endif %}
+                <p><strong>تم الإنشاء بواسطة:</strong> {{ correspondence.creator.full_name }}</p>
+                <p><strong>تاريخ الإنشاء:</strong> {{ correspondence.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                {% if correspondence.updated_at != correspondence.created_at %}
+                <p><strong>آخر تحديث:</strong> {{ correspondence.updated_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5><i class="bi bi-clock"></i> التواريخ المهمة</h5>
+            </div>
+            <div class="card-body">
+                {% if correspondence.received_date %}
+                <p><strong>تاريخ الاستلام:</strong> {{ correspondence.received_date.strftime('%Y-%m-%d') }}</p>
+                {% endif %}
+                {% if correspondence.due_date %}
+                <p><strong>تاريخ الاستحقاق:</strong> {{ correspondence.due_date.strftime('%Y-%m-%d') }}</p>
+                <div class="mt-2">
+                    {% set days_until_due = (correspondence.due_date - today).days %}
+                    {% if days_until_due < 0 %}
+                        <span class="badge bg-danger">متأخر بـ {{ -days_until_due }} يوم</span>
+                    {% elif days_until_due == 0 %}
+                        <span class="badge bg-warning">مستحق اليوم</span>
+                    {% elif days_until_due <= 3 %}
+                        <span class="badge bg-warning">مستحق خلال {{ days_until_due }} أيام</span>
+                    {% else %}
+                        <span class="badge bg-success">متبقي {{ days_until_due }} يوم</span>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5><i class="bi bi-gear"></i> إجراءات</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-success" onclick="updateStatus('processed')">
+                        <i class="bi bi-check-circle"></i> تحديد كمُعالج
+                    </button>
+                    <button class="btn btn-outline-secondary" onclick="updateStatus('archived')">
+                        <i class="bi bi-archive"></i> أرشفة
+                    </button>
+                    <button class="btn btn-outline-primary" onclick="duplicateCorrespondence()">
+                        <i class="bi bi-files"></i> نسخ مراسلة
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function printCorrespondence() {
+    window.print();
+}
+
+function updateStatus(status) {
+    if (confirm(`هل أنت متأكد من تحديث حالة المراسلة؟`)) {
+        fetch(`/correspondences/{{ correspondence.id }}/status`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ status: status })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('حدث خطأ أثناء التحديث');
+            }
+        });
+    }
+}
+
+function duplicateCorrespondence() {
+    if (confirm('هل تريد إنشاء مراسلة جديدة بناءً على هذه المراسلة؟')) {
+        window.location.href = `/correspondences/add?duplicate={{ correspondence.id }}`;
+    }
+}
+</script>
+{% endblock %}

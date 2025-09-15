@@ -1,0 +1,406 @@
+{% extends "base.html" %}
+
+{% block title %}تحرير المراسلة - نظام التجارة المصري{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="bi bi-pencil"></i> تحرير المراسلة</h1>
+    <div class="btn-group">
+        <a href="{{ url_for('correspondences') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> العودة للقائمة
+        </a>
+        <a href="{{ url_for('view_correspondence', id=correspondence.id) }}" class="btn btn-outline-info">
+            <i class="bi bi-eye"></i> عرض
+        </a>
+    </div>
+</div>
+
+<div class="alert alert-info">
+    <i class="bi bi-info-circle"></i>
+    <strong>رقم المرجع:</strong> {{ correspondence.reference_number }}
+</div>
+
+<form method="POST" enctype="multipart/form-data" id="correspondenceForm">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="bi bi-info-circle"></i> معلومات أساسية</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="type" class="form-label">نوع المراسلة *</label>
+                                <select class="form-select" id="type" name="type" required>
+                                    <option value="incoming" {% if correspondence.type == 'incoming' %}selected{% endif %}>وارد</option>
+                                    <option value="outgoing" {% if correspondence.type == 'outgoing' %}selected{% endif %}>صادر</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="priority" class="form-label">الأولوية</label>
+                                <select class="form-select" id="priority" name="priority">
+                                    <option value="normal" {% if correspondence.priority == 'normal' %}selected{% endif %}>عادية</option>
+                                    <option value="high" {% if correspondence.priority == 'high' %}selected{% endif %}>عالية</option>
+                                    <option value="low" {% if correspondence.priority == 'low' %}selected{% endif %}>منخفضة</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="status" class="form-label">الحالة</label>
+                                <select class="form-select" id="status" name="status">
+                                    <option value="pending" {% if correspondence.status == 'pending' %}selected{% endif %}>في الانتظار</option>
+                                    <option value="processed" {% if correspondence.status == 'processed' %}selected{% endif %}>مُعالج</option>
+                                    <option value="archived" {% if correspondence.status == 'archived' %}selected{% endif %}>مؤرشف</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="subject" class="form-label">الموضوع *</label>
+                        <input type="text" class="form-control" id="subject" name="subject" required 
+                               value="{{ correspondence.subject }}">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="content" class="form-label">المحتوى *</label>
+                        <textarea class="form-control" id="content" name="content" rows="6" required>{{ correspondence.content }}</textarea>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="correspondence_date" class="form-label">تاريخ المراسلة *</label>
+                                <input type="date" class="form-control" id="correspondence_date" 
+                                       name="correspondence_date" required
+                                       value="{{ correspondence.correspondence_date.strftime('%Y-%m-%d') if correspondence.correspondence_date else '' }}">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="received_date" class="form-label">تاريخ الاستلام</label>
+                                <input type="date" class="form-control" id="received_date" name="received_date"
+                                       value="{{ correspondence.received_date.strftime('%Y-%m-%d') if correspondence.received_date else '' }}">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="due_date" class="form-label">تاريخ الاستحقاق</label>
+                        <input type="date" class="form-control" id="due_date" name="due_date"
+                               value="{{ correspondence.due_date.strftime('%Y-%m-%d') if correspondence.due_date else '' }}">
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5><i class="bi bi-people"></i> معلومات الاتصال</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="border-bottom pb-2">المرسل</h6>
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="sender_type" 
+                                           id="sender_contact" value="contact" 
+                                           {% if correspondence.sender_id %}checked{% endif %}>
+                                    <label class="form-check-label" for="sender_contact">
+                                        من جهات الاتصال
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="sender_type" 
+                                           id="sender_external" value="external"
+                                           {% if correspondence.sender_external %}checked{% endif %}>
+                                    <label class="form-check-label" for="sender_external">
+                                        جهة خارجية
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div id="sender_contact_div" {% if correspondence.sender_external %}class="d-none"{% endif %}>
+                                <select class="form-select" id="sender_id" name="sender_id">
+                                    <option value="">اختر المرسل</option>
+                                    {% for contact in contacts %}
+                                    <option value="{{ contact.id }}" {% if correspondence.sender_id == contact.id %}selected{% endif %}>
+                                        {{ contact.name }} - {{ contact.organization or '' }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div id="sender_external_div" {% if not correspondence.sender_external %}class="d-none"{% endif %}>
+                                <input type="text" class="form-control" name="sender_external" 
+                                       placeholder="اسم المرسل الخارجي" value="{{ correspondence.sender_external or '' }}">
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <h6 class="border-bottom pb-2">المستقبل</h6>
+                            <div class="mb-3">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="recipient_type" 
+                                           id="recipient_contact" value="contact"
+                                           {% if correspondence.recipient_id %}checked{% endif %}>
+                                    <label class="form-check-label" for="recipient_contact">
+                                        من جهات الاتصال
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="recipient_type" 
+                                           id="recipient_external" value="external"
+                                           {% if correspondence.recipient_external %}checked{% endif %}>
+                                    <label class="form-check-label" for="recipient_external">
+                                        جهة خارجية
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div id="recipient_contact_div" {% if correspondence.recipient_external %}class="d-none"{% endif %}>
+                                <select class="form-select" id="recipient_id" name="recipient_id">
+                                    <option value="">اختر المستقبل</option>
+                                    {% for contact in contacts %}
+                                    <option value="{{ contact.id }}" {% if correspondence.recipient_id == contact.id %}selected{% endif %}>
+                                        {{ contact.name }} - {{ contact.organization or '' }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <div id="recipient_external_div" {% if not correspondence.recipient_external %}class="d-none"{% endif %}>
+                                <input type="text" class="form-control" name="recipient_external" 
+                                       placeholder="اسم المستقبل الخارجي" value="{{ correspondence.recipient_external or '' }}">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5><i class="bi bi-building"></i> الإدارة والتعيين</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="department_id" class="form-label">الإدارة المختصة *</label>
+                                <select class="form-select" id="department_id" name="department_id" required>
+                                    <option value="">اختر الإدارة</option>
+                                    {% for dept in departments %}
+                                    <option value="{{ dept.id }}" {% if correspondence.department_id == dept.id %}selected{% endif %}>
+                                        {{ dept.name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="assigned_to" class="form-label">المسؤول</label>
+                                <select class="form-select" id="assigned_to" name="assigned_to">
+                                    <option value="">اختر المسؤول</option>
+                                    {% for user in users %}
+                                    <option value="{{ user.id }}" {% if correspondence.assigned_to == user.id %}selected{% endif %}>
+                                        {{ user.full_name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5><i class="bi bi-paperclip"></i> المرفقات</h5>
+                </div>
+                <div class="card-body">
+                    {% if correspondence.attachments %}
+                    <h6>المرفقات الحالية:</h6>
+                    <div class="row mb-3">
+                        {% for attachment in correspondence.attachments %}
+                        <div class="col-md-6 mb-2">
+                            <div class="d-flex justify-content-between align-items-center border rounded p-2">
+                                <span>{{ attachment.original_filename }}</span>
+                                <button type="button" class="btn btn-sm btn-outline-danger" 
+                                        onclick="removeAttachment({{ attachment.id }})">
+                                    <i class="bi bi-x"></i>
+                                </button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mb-3">
+                        <label for="attachments" class="form-label">إضافة مرفقات جديدة</label>
+                        <input type="file" class="form-control" id="attachments" name="attachments" 
+                               multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png">
+                        <div class="form-text">
+                            يمكن رفع ملفات PDF, Word, Excel, والصور. الحد الأقصى لحجم الملف: 16 ميجابايت
+                        </div>
+                    </div>
+                    
+                    <div id="file-preview" class="mt-3"></div>
+                </div>
+            </div>
+            
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                <a href="{{ url_for('view_correspondence', id=correspondence.id) }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-x-circle"></i> إلغاء
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bi bi-check-circle"></i> حفظ التغييرات
+                </button>
+            </div>
+        </div>
+        
+        <!-- Sidebar -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="bi bi-info-circle"></i> معلومات المراسلة</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>تم الإنشاء:</strong> {{ correspondence.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                    <p><strong>بواسطة:</strong> {{ correspondence.creator.full_name }}</p>
+                    {% if correspondence.updated_at != correspondence.created_at %}
+                    <p><strong>آخر تحديث:</strong> {{ correspondence.updated_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5><i class="bi bi-exclamation-triangle"></i> تحذيرات</h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-warning">
+                        <small>
+                            <i class="bi bi-info-circle"></i>
+                            سيتم إشعار جميع المستخدمين بالتغييرات المُجراة على هذه المراسلة.
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Handle sender type toggle
+document.querySelectorAll('input[name="sender_type"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+        if (this.value === 'contact') {
+            document.getElementById('sender_contact_div').classList.remove('d-none');
+            document.getElementById('sender_external_div').classList.add('d-none');
+        } else {
+            document.getElementById('sender_contact_div').classList.add('d-none');
+            document.getElementById('sender_external_div').classList.remove('d-none');
+        }
+    });
+});
+
+// Handle recipient type toggle
+document.querySelectorAll('input[name="recipient_type"]').forEach(radio => {
+    radio.addEventListener('change', function() {
+        if (this.value === 'contact') {
+            document.getElementById('recipient_contact_div').classList.remove('d-none');
+            document.getElementById('recipient_external_div').classList.add('d-none');
+        } else {
+            document.getElementById('recipient_contact_div').classList.add('d-none');
+            document.getElementById('recipient_external_div').classList.remove('d-none');
+        }
+    });
+});
+
+// File preview
+document.getElementById('attachments').addEventListener('change', function() {
+    const filePreview = document.getElementById('file-preview');
+    filePreview.innerHTML = '';
+    
+    Array.from(this.files).forEach(file => {
+        const fileItem = document.createElement('div');
+        fileItem.className = 'alert alert-info d-flex justify-content-between align-items-center';
+        fileItem.innerHTML = `
+            <div>
+                <i class="bi bi-file-earmark"></i>
+                <strong>${file.name}</strong>
+                <small class="text-muted">(${(file.size / 1024 / 1024).toFixed(2)} MB)</small>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeFile(this, '${file.name}')">
+                <i class="bi bi-x"></i>
+            </button>
+        `;
+        filePreview.appendChild(fileItem);
+    });
+});
+
+function removeFile(button, filename) {
+    // Remove from preview
+    button.parentElement.remove();
+    
+    // Remove from file input (requires recreating the input)
+    const fileInput = document.getElementById('attachments');
+    const dt = new DataTransfer();
+    
+    Array.from(fileInput.files).forEach(file => {
+        if (file.name !== filename) {
+            dt.items.add(file);
+        }
+    });
+    
+    fileInput.files = dt.files;
+}
+
+function removeAttachment(attachmentId) {
+    if (confirm('هل أنت متأكد من حذف هذا المرفق؟')) {
+        fetch(`/attachments/${attachmentId}/delete`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('حدث خطأ أثناء حذف المرفق');
+            }
+        });
+    }
+}
+
+// Form validation
+document.getElementById('correspondenceForm').addEventListener('submit', function(e) {
+    const subject = document.getElementById('subject').value;
+    const content = document.getElementById('content').value;
+    
+    if (subject.length < 5) {
+        e.preventDefault();
+        alert('يجب أن يكون الموضوع 5 أحرف على الأقل');
+        return;
+    }
+    
+    if (content.length < 10) {
+        e.preventDefault();
+        alert('يجب أن يكون المحتوى 10 أحرف على الأقل');
+        return;
+    }
+});
+</script>
+{% endblock %}
